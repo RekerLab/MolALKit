@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from sklearn.ensemble import GradientBoostingClassifier as GBC
 from sklearn.ensemble import GradientBoostingRegressor as GBR
 from molalkit.models.base import BaseSklearnModel

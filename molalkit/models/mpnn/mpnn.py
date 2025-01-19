@@ -20,9 +20,9 @@ from chemprop.args import TrainArgs
 class MPNN:
     def __init__(self,
                  save_dir: str, data_path: str,
-                 dataset_type: Literal['regression', 'classification', 'multiclass', 'spectra'],
-                 loss_function: Literal['mse', 'bounded_mse', 'binary_cross_entropy', 'cross_entropy', 'mcc', 'sid',
-                                        'wasserstein', 'mve', 'evidential', 'dirichlet'],
+                 dataset_type: Literal["regression", "classification", "multiclass", "spectra"],
+                 loss_function: Literal["mse", "bounded_mse", "binary_cross_entropy", "cross_entropy", "mcc", "sid",
+                                        "wasserstein", "mve", "evidential", "dirichlet"],
                  smiles_columns: List[str] = None, target_columns: List[str] = None,
                  multiclass_num_classes: int = 3,
                  features_generator=None,
@@ -109,7 +109,7 @@ class MPNN:
         # Set pytorch seed for random initial weights
         torch.manual_seed(args.pytorch_seed)
 
-        if args.dataset_type == 'classification':
+        if args.dataset_type == "classification":
             train_class_sizes = get_class_sizes(train_data, proportion=False)
             args.train_class_sizes = train_class_sizes
 
@@ -121,8 +121,8 @@ class MPNN:
 
         # Initialize scaler and scale training targets by subtracting mean and dividing standard deviation (
         # regression only)
-        if args.dataset_type == 'regression':
-            debug('Fitting scaler')
+        if args.dataset_type == "regression":
+            debug("Fitting scaler")
             scaler = train_data.normalize_targets()
             args.spectra_phase_mask = None
         else:
@@ -143,40 +143,40 @@ class MPNN:
 
         if args.class_balance:
             debug(
-                f'With class_balance, effective train size = {train_data_loader.iter_size:,}')
+                f"With class_balance, effective train size = {train_data_loader.iter_size:,}")
 
-        if self.continuous_fit and hasattr(self, 'models'):
+        if self.continuous_fit and hasattr(self, "models"):
             assert len(self.models) == args.ensemble_size
         else:
             self.models = []
 
         for model_idx in range(args.ensemble_size):
-            save_dir = os.path.join(args.save_dir, f'model_{model_idx}')
+            save_dir = os.path.join(args.save_dir, f"model_{model_idx}")
             makedirs(save_dir)
             writer = None
             if self.continuous_fit and len(self.models) == args.ensemble_size:
                 debug(
-                    f'Loading model {model_idx} that fitted at previous iteration')
+                    f"Loading model {model_idx} that fitted at previous iteration")
                 model = self.models[model_idx]
             else:
-                debug(f'Building model {model_idx} from scratch')
+                debug(f"Building model {model_idx} from scratch")
                 model = MoleculeModel(args)
                 if args.cuda:
-                    debug('Moving model to cuda')
+                    debug("Moving model to cuda")
                 model = model.to(args.device)
 
             if args.mpn_path is not None:
-                debug(f'Loading MPN parameters from {args.mpn_path}.')
+                debug(f"Loading MPN parameters from {args.mpn_path}.")
                 model = load_mpn_model(
                     model=model, path=args.mpn_path, current_args=args, logger=logger)
 
             debug(model)
 
             if args.freeze_mpn:
-                debug(f'Number of unfrozen parameters = {param_count(model):,}')
-                debug(f'Total number of parameters = {param_count_all(model):,}')
+                debug(f"Number of unfrozen parameters = {param_count(model):,}")
+                debug(f"Total number of parameters = {param_count_all(model):,}")
             else:
-                debug(f'Number of parameters = {param_count_all(model):,}')
+                debug(f"Number of parameters = {param_count_all(model):,}")
             # Optimizers
             optimizer = build_optimizer(model, args)
 
@@ -185,7 +185,7 @@ class MPNN:
 
             n_iter = 0
             for epoch in trange(args.epochs):
-                debug(f'Epoch {epoch}')
+                debug(f"Epoch {epoch}")
                 n_iter = train(
                     model=model,
                     data_loader=train_data_loader,
@@ -224,17 +224,17 @@ class MPNN:
             )
             sum_test_preds += np.array(preds)
         preds = sum_test_preds / len(self.models)
-        if args.dataset_type == 'classification':
+        if args.dataset_type == "classification":
             preds = np.array(preds)
             preds = np.concatenate([preds, 1-preds], axis=1)
             return (0.25 - np.var(preds, axis=1)) * 4
-        elif args.dataset_type == 'multiclass':
+        elif args.dataset_type == "multiclass":
             raise ValueError("Not implemented")
-        elif args.dataset_type == 'regression':
+        elif args.dataset_type == "regression":
             if args.loss_function == "mve":
                 preds, var = preds
                 return np.array(var).ravel()
-            elif args.loss_function == 'evidential':
+            elif args.loss_function == "evidential":
                 preds, lambdas, alphas, betas = preds
                 return (np.array(betas) / (np.array(lambdas) * (np.array(alphas) - 1))).ravel()
             else:
@@ -261,15 +261,15 @@ class MPNN:
             )
             sum_test_preds += np.array(preds)
         preds = sum_test_preds / len(self.models)
-        if args.dataset_type in ['classification']:
+        if args.dataset_type in ["classification"]:
             return np.array(preds).ravel()
-        elif args.dataset_type == 'multiclass':
+        elif args.dataset_type == "multiclass":
             raise ValueError("Not implemented")
-        elif args.dataset_type == 'regression':
+        elif args.dataset_type == "regression":
             if args.loss_function == "mve":
                 preds, var = preds
                 return np.array(preds).ravel()
-            elif args.loss_function == 'evidential':
+            elif args.loss_function == "evidential":
                 preds, lambdas, alphas, betas = preds
                 return np.array(preds).ravel()
             else:

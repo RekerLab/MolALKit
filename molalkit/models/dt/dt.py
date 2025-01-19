@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from sklearn.tree import DecisionTreeClassifier as DTC
 from molalkit.models.base import BaseSklearnModel
 

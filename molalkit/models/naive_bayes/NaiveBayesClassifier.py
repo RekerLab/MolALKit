@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import numpy as np
 from sklearn.naive_bayes import BernoulliNB, MultinomialNB, GaussianNB
 from molalkit.models.base import BaseSklearnModel
 

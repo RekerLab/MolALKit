@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import numpy as np
 from mgktools.models.classification.gpc.gpc import GPC_MGK
 from molalkit.models.base import BaseSklearnModel
 

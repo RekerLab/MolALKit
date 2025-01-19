@@ -19,7 +19,7 @@ class RFRegressor(RandomForestRegressor, BaseSklearnModel):
         n_jobs, _, _ = _partition_estimators(self.n_estimators, self.n_jobs)
 
         results = Parallel(
-            n_jobs=n_jobs, verbose=self.verbose, prefer='processes')(
+            n_jobs=n_jobs, verbose=self.verbose, prefer="processes")(
             delayed(e.predict)(X)
             for e in self.estimators_)
         return np.asarray(results).std(axis=0)

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import numpy as np
 from xgboost import XGBRegressor as XGBR
 from molalkit.models.base import BaseSklearnModel
 

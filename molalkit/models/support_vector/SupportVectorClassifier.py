@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import numpy as np
 from sklearn.svm import SVC
 from molalkit.models.base import BaseSklearnModel
 
