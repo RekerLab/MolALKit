@@ -6,8 +6,7 @@ This software package serves as a robust toolkit designed for the active learnin
 Python 3.10 is recommended.
 Check the GPU and CUDA requirements at [mgktools](https://github.com/Xiangyan93/mgktools) for marginalized graph kernel model.
 ```
-pip install numpy==1.22.3 git+https://gitlab.com/Xiangyan93/graphdot.git@feature/xy git+https://github.com/bp-kelley/descriptastorus git+https://github.com/Xiangyan93/chemprop.git@molalkit
-pip install mgktools molalkit
+pip install git+https://gitlab.com/Xiangyan93/graphdot.git@feature/xy git+https://github.com/Xiangyan93/chemprop.git@molalkit mgktools molalkit
 ```
 
 ## QuickStart
