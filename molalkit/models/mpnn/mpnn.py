@@ -14,11 +14,14 @@ from chemprop.models import MoleculeModel
 from chemprop.train.loss_functions import get_loss_func
 from chemprop.train import train
 from chemprop.train.predict import predict
-from chemprop.args import TrainArgs
+from chemprop.args import TrainArgs, PredictArgs
+from chemprop.train.run_training import save_checkpoint, MODEL_FILE_NAME
+from chemprop.train.make_predictions import make_predictions, set_features, predict_and_save
 
 
 class MPNN:
     def __init__(self,
+                 # TrainArgs parameters
                  save_dir: str, data_path: str,
                  dataset_type: Literal["regression", "classification", "multiclass", "spectra"],
                  loss_function: Literal["mse", "bounded_mse", "binary_cross_entropy", "cross_entropy", "mcc", "sid",
@@ -50,6 +53,12 @@ class MPNN:
                  mpn_path: str = None,
                  freeze_mpn: bool = False,
                  seed: int = 0,
+                 # PredictArgs parameters
+                 uncertainty_method: Literal["mve", "ensemble", "evidential_epistemic", "evidential_aleatoric",
+                                             "evidential_total", "classification", "dropout", "spectra_roundrobin"] = None,
+                 uncertainty_dropout_p: float = 0.1,
+                 dropout_sampling_size: int = 10,
+                 # other parameters
                  continuous_fit: bool = False,
                  logger: Logger = None,
                  ):
@@ -91,9 +100,17 @@ class MPNN:
                                          target_columns=args.target_columns, ignore_columns=args.ignore_columns)
         args._parsed = True
         self.args = args
-        self.features_scaler = None
         self.continuous_fit = continuous_fit
         self.logger = logger
+        args_predict = PredictArgs()
+        args_predict.uncertainty_method = uncertainty_method
+        args_predict.uncertainty_dropout_p = uncertainty_dropout_p
+        args_predict.dropout_sampling_size = dropout_sampling_size
+        # args_predict.checkpoint_dir = save_dir
+        # args_predict.test_path = "fake"
+        # args_predict.preds_path = "fake"
+        # args_predict.process_args()
+        self.args_predict = args_predict
 
     def fit_molalkit(self, train_data):
         if not self.continuous_fit and torch.cuda.is_available():
@@ -114,8 +131,10 @@ class MPNN:
             args.train_class_sizes = train_class_sizes
 
         if args.features_scaling:
-            self.features_scaler = train_data.normalize_features(
+            features_scaler = train_data.normalize_features(
                 replace_nan_token=0)
+        else:
+            features_scaler = None
 
         args.train_data_size = len(train_data)
 
@@ -150,6 +169,7 @@ class MPNN:
         else:
             self.models = []
 
+        self.scalers = []
         for model_idx in range(args.ensemble_size):
             save_dir = os.path.join(args.save_dir, f"model_{model_idx}")
             makedirs(save_dir)
@@ -203,76 +223,52 @@ class MPNN:
                 assert len(self.models) == model_idx
                 self.models.append(model)
 
-            self.scaler = scaler
+            self.scalers.append((scaler, features_scaler, None, None))
+            # save the model after training
+            # save_checkpoint(os.path.join(save_dir, MODEL_FILE_NAME), model, scaler,
+            #                 features_scaler, None, None, args)
+
+    def predict(self, pred_data):
+        args = self.args_predict
+        train_args = self.args
+        models = (model for model in self.models)
+        scalers = (scaler for scaler in self.scalers)
+        num_tasks = train_args.num_tasks
+        task_names = train_args.task_names
+
+        set_features(args, train_args)
+
+        if train_args.features_scaling:
+            pred_data.normalize_features(self.scalers[0][0])
+        pred_data_loader = MoleculeDataLoader(
+            dataset=pred_data,
+            batch_size=train_args.batch_size,
+            num_workers=train_args.num_workers
+        )
+        preds, unc = predict_and_save(
+            args=args,
+            train_args=train_args,
+            test_data=pred_data,
+            task_names=task_names,
+            num_tasks=num_tasks,
+            test_data_loader=pred_data_loader,
+            full_data=pred_data,
+            full_to_valid_indices={i: i for i in range(len(pred_data))},
+            models=models,
+            scalers=scalers,
+            num_models=len(self.models),
+            return_invalid_smiles=False,
+            save_results=False
+        )
+        return np.array(preds).ravel(), np.array(unc).ravel()
 
     def predict_uncertainty(self, pred_data):
-        args = self.args
-        if args.features_scaling:
-            pred_data.normalize_features(self.features_scaler)
-        pred_data_loader = MoleculeDataLoader(
-            dataset=pred_data,
-            batch_size=args.batch_size,
-            num_workers=args.num_workers
-        )
-        sum_test_preds = 0.
-        for model in self.models:
-            preds = predict(
-                model=model,
-                data_loader=pred_data_loader,
-                scaler=self.scaler,
-                return_unc_parameters=True
-            )
-            sum_test_preds += np.array(preds)
-        preds = sum_test_preds / len(self.models)
-        if args.dataset_type == "classification":
-            preds = np.array(preds)
+        if self.args_predict.uncertainty_method is None and self.args.dataset_type == "classification":
+            preds = np.array(self.predict(pred_data)[0])
             preds = np.concatenate([preds, 1-preds], axis=1)
             return (0.25 - np.var(preds, axis=1)) * 4
-        elif args.dataset_type == "multiclass":
-            raise ValueError("Not implemented")
-        elif args.dataset_type == "regression":
-            if args.loss_function == "mve":
-                preds, var = preds
-                return np.array(var).ravel()
-            elif args.loss_function == "evidential":
-                preds, lambdas, alphas, betas = preds
-                return (np.array(betas) / (np.array(lambdas) * (np.array(alphas) - 1))).ravel()
-            else:
-                raise ValueError
         else:
-            raise ValueError
+            return self.predict(pred_data)[1]
 
     def predict_value(self, pred_data):
-        args = self.args
-        if args.features_scaling:
-            pred_data.normalize_features(self.features_scaler)
-        pred_data_loader = MoleculeDataLoader(
-            dataset=pred_data,
-            batch_size=args.batch_size,
-            num_workers=args.num_workers
-        )
-        sum_test_preds = 0.
-        for model in self.models:
-            preds = predict(
-                model=model,
-                data_loader=pred_data_loader,
-                scaler=self.scaler,
-                return_unc_parameters=True
-            )
-            sum_test_preds += np.array(preds)
-        preds = sum_test_preds / len(self.models)
-        if args.dataset_type in ["classification"]:
-            return np.array(preds).ravel()
-        elif args.dataset_type == "multiclass":
-            raise ValueError("Not implemented")
-        elif args.dataset_type == "regression":
-            if args.loss_function == "mve":
-                preds, var = preds
-                return np.array(preds).ravel()
-            elif args.loss_function == "evidential":
-                preds, lambdas, alphas, betas = preds
-                return np.array(preds).ravel()
-            else:
-                return np.array(preds).ravel()
-        else:
-            raise ValueError()
+        return self.predict(pred_data)[0]
