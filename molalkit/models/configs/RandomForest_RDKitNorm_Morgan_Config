@@ -1,5 +1,5 @@
 {
-    "data_format": "fingerprints",
+    "data_format": "mgktools",
     "model": "random_forest",
     "fingerprints_class": [
         "rdkit_2d_normalized", "morgan"

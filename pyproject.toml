@@ -26,6 +26,7 @@ requires-python = ">=3.9"
 dependencies = [
     "mgktools==3.1.0", # new version print annoying warnings
     "xgboost",
+    "selfies"
 ]
 
 [project.urls]

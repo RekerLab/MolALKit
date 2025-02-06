@@ -5,7 +5,7 @@ import copy
 import pandas as pd
 
 
-def get_data(data_format: Literal["mgktools", "chemprop", "fingerprints"],
+def get_data(data_format: Literal["mgktools", "chemprop"],
              path: str,
              smiles_columns: List[str] = None,
              targets_columns: List[str] = None,
@@ -19,28 +19,14 @@ def get_data(data_format: Literal["mgktools", "chemprop", "fingerprints"],
     df = pd.read_csv(path)
     if len(df) == 0:
         return None
-    if data_format == "fingerprints":
-        assert graph_kernel_type is None, f"{graph_kernel_type}"
-        assert features_generators is not None, "Please provide features_generators for fingerprints data."
-        from mgktools.data.data import Dataset
-        dataset = Dataset.from_df(df=df,
-                                  smiles_columns=smiles_columns,
-                                  features_columns=features_columns,
-                                  targets_columns=targets_columns,
-                                  n_jobs=n_jobs)
-        dataset.set_status(graph_kernel_type="no",
-                           features_generators=features_generators, 
-                           features_combination=features_combination)
-        dataset.create_features_mol(n_jobs=n_jobs)
-    elif data_format == "chemprop":
+    if data_format == "chemprop":
         from chemprop.data.utils import get_data
         assert features_columns is None
         dataset = get_data(path=path,
                            smiles_columns=smiles_columns,
                            target_columns=targets_columns,
                            features_generator=features_generators)
-    elif data_format == "mgktools":
-        assert graph_kernel_type in ["graph", "pre-computed"]
+    else:
         from mgktools.data.data import Dataset
         dataset = Dataset.from_df(df=df,
                                   smiles_columns=smiles_columns,
@@ -50,12 +36,11 @@ def get_data(data_format: Literal["mgktools", "chemprop", "fingerprints"],
         dataset.set_status(graph_kernel_type=graph_kernel_type,
                            features_generators=features_generators, 
                            features_combination=features_combination)
-        dataset.create_graphs(n_jobs=n_jobs)
+        if graph_kernel_type in ["graph", "pre-computed"]:
+            dataset.create_graphs(n_jobs=n_jobs)
+            dataset.unify_datatype()
         if features_generators is not None:
             dataset.create_features_mol(n_jobs=n_jobs)
-        dataset.unify_datatype()
-    else:
-        raise ValueError("input error")
     if "uidx" not in df:
         df["uidx"] = range(len(df))
     for i, data in enumerate(dataset):

@@ -13,9 +13,25 @@ from molalkit.exe.logging import EmptyLogger
 
 def get_model(data_format: Literal["mgktools", "chemprop", "fingerprints"],
               task_type: Literal["regression", "binary", "multiclass"],
+              n_jobs: int = 8,
+              seed: int = 0,
+              # arguments for classical machine learning models
               model: Literal["random_forest", "naive_bayes", "logistic_regression", "gaussian_process_regression",
                              "gaussian_process_classification", "support_vector_machine", "adaboost", "xgboost", 
-                             "decision_tree", "extra_trees", "MultinomialNB", "BernoulliNB", "GaussianNB"],
+                             "decision_tree", "extra_trees", "MultinomialNB", "BernoulliNB", "GaussianNB", 
+                             "LSTM", "GRU"] = "random_forest",
+              kernel=None,
+              uncertainty_type: Literal["value", "uncertainty"] = None,
+              alpha: Union[float, str] = 1e-8,
+              C: float = 1.0,
+              booster: Literal["gbtree", "gblinear", "dart"] = "gbtree",
+              n_estimators: int = 100,
+              max_depth: int = None,
+              learning_rate: float = 0.1,
+              tokenizer: Literal["SMILES", "SELFIES"] = None,
+              smiles_full: List[str] = None,
+              embedding_size: int = 64,
+              # chemprop arguments
               save_dir: str = None,
               data_path: str = None,
               smiles_columns: List[str] = None,
@@ -46,22 +62,16 @@ def get_model(data_format: Literal["mgktools", "chemprop", "fingerprints"],
               freeze_first_only: bool = False,
               mpn_path: str = None,
               freeze_mpn: bool = False,
+              uncertainty_method: Literal["mve", "ensemble", "evidential_epistemic", "evidential_aleatoric",
+                                          "evidential_total", "classification", "dropout", "spectra_roundrobin"] = None,
+              uncertainty_dropout_p: float = 0.1,
+              dropout_sampling_size: int = 10,
               continuous_fit: bool = False,
-              kernel=None,
-              uncertainty_type: Literal["value", "uncertainty"] = None,
-              alpha: Union[float, str] = 1e-8,
-              C: float = 1.0,
-              booster: Literal["gbtree", "gblinear", "dart"] = "gbtree",
-              n_estimators: int = 100,
-              max_depth: int = None,
-              learning_rate: float = 0.1,
-              n_jobs: int = 8,
-              seed: int = 0,
               logger: Logger = None):
     if alpha.__class__ == str:
         alpha = float(open(alpha).read())
 
-    if data_format == "fingerprints":
+    if data_format == "mgktools":
         if model == "random_forest":
             if task_type == "regression":
                 from molalkit.models.random_forest.RandomForestRegressor import RFRegressor
@@ -130,6 +140,26 @@ def get_model(data_format: Literal["mgktools", "chemprop", "fingerprints"],
             else:
                 from molalkit.models.gradient_boosting.gradient_boosting import GradientBoostingClassifier
                 return GradientBoostingClassifier(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate, random_state=seed)
+        elif model in ["LSTM", "GRU"]:
+            from molalkit.models.rnn.rnn import RNN
+            from molalkit.models.rnn.tokenizer import SMILESTokenizer, SELFIESTokenizer
+            if tokenizer == "SMILES":
+                tokenizer_ = SMILESTokenizer()
+            elif tokenizer == "SELFIES":
+                tokenizer_ = SELFIESTokenizer()
+            else:
+                raise ValueError(f"unknown tokenizer: {tokenizer}")
+            tokenizer_.create_vocabulary(smiles_full)
+            return RNN(tokenizer=tokenizer_,
+                       task_type=task_type,
+                       rnn_type=model,
+                       embedding_size=embedding_size,
+                       depth=depth,
+                       hidden_size=hidden_size,
+                       dropout=dropout,
+                       epochs=epochs,
+                       ffn_num_layers=ffn_num_layers,
+                       batch_size=batch_size)
         else:
             raise ValueError(f"unknown model: {model}")
     elif data_format == "chemprop":
@@ -164,34 +194,18 @@ def get_model(data_format: Literal["mgktools", "chemprop", "fingerprints"],
                     freeze_first_only=freeze_first_only,
                     mpn_path=mpn_path,
                     freeze_mpn=freeze_mpn,
+                    uncertainty_method=uncertainty_method,
+                    uncertainty_dropout_p=uncertainty_dropout_p,
+                    dropout_sampling_size=dropout_sampling_size,
                     n_jobs=n_jobs,
                     seed=seed,
                     continuous_fit=continuous_fit,
                     logger=logger or EmptyLogger())
-    elif data_format == "mgktools":
-        if model == "gaussian_process_regression":
-            assert task_type in ["regression", "binary"]
-            assert uncertainty_type is not None
-            from molalkit.models.gaussian_process.GaussianProcessRegressor import GPRegressor
-            return GPRegressor(kernel=kernel, alpha=alpha, optimizer=None, uncertainty_type=uncertainty_type)
-        elif model == "gaussian_process_classification":
-            assert task_type == "binary"
-            from molalkit.models.gaussian_process.GaussianProcessClassifier import GPClassifier
-            return GPClassifier(kernel=kernel, optimizer=None)
-        elif model == "support_vector_machine":
-            if task_type == "regression":
-                from molalkit.models.support_vector.SupportVectorRegressor import SVRegressor
-                return SVRegressor(kernel=kernel, C=C)
-            else:
-                from molalkit.models.support_vector.SupportVectorClassifier import SVClassifier
-                return SVClassifier(kernel=kernel, C=C, probability=True)
-        else:
-            raise ValueError(f"unknown model: {model}")
     else:
         raise ValueError(f"unknown data_format {data_format}")
 
 
-def get_kernel(graph_kernel_type: Literal["graph", "pre-computed"] = None,
+def get_kernel(graph_kernel_type: Literal["graph", "pre-computed", "no"] = "no",
                mgk_files: List[str] = None,
                features_kernel_type: Literal["dot_product", "rbf"] = None,
                features_hyperparameters: Union[float, List[float]] = None,
@@ -200,7 +214,7 @@ def get_kernel(graph_kernel_type: Literal["graph", "pre-computed"] = None,
                kernel_pkl_path: str = None,
                ):
     if mgk_files is None:
-        assert graph_kernel_type is None
+        assert graph_kernel_type == "no"
         # no graph kernel involved.
         if features_kernel_type is None:
             return None

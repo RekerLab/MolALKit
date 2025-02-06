@@ -1,5 +1,5 @@
 {
-    "data_format": "fingerprints",
+    "data_format": "mgktools",
     "model": "support_vector_machine",
     "C": 1.0,
     "fingerprints_class": [

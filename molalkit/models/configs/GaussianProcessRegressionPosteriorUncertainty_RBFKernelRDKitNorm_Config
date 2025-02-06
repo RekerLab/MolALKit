@@ -1,5 +1,5 @@
 {
-    "data_format": "fingerprints",
+    "data_format": "mgktools",
     "model": "gaussian_process_regression",
     "alpha": 0.01,
     "fingerprints_class": [

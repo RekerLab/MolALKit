@@ -357,7 +357,7 @@ class DatasetModelArgs(DatasetArgs, ModelArgs):
                 features_columns=self.features_columns,
                 features_generators=self.features_generators[i],
                 features_combination=model_config.get("features_combination"),
-                graph_kernel_type=model_config.get("graph_kernel_type"),
+                graph_kernel_type=model_config.get("graph_kernel_type") or "no",
                 n_jobs=self.n_jobs) for i, model_config in enumerate(self.model_configs_dict)]
         return self._datasets_full
 

@@ -1,5 +1,5 @@
 {
-    "data_format": "fingerprints",
+    "data_format": "mgktools",
     "model": "MultinomialNB",
     "fingerprints_class": [
         "morgan"

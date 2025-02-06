@@ -23,7 +23,7 @@ def get_features_generators_from_config(model_config: Dict) -> Optional[List[Lis
 
 def get_kernel_from_config(model_config: Dict, dataset, kernel_pkl_path) -> Callable:
     return get_kernel(
-        graph_kernel_type=model_config.get("graph_kernel_type"),
+        graph_kernel_type=model_config.get("graph_kernel_type") or "no",
         mgk_files=model_config.get("mgk_files"),
         features_kernel_type=model_config.get("features_kernel_type"),
         features_hyperparameters=model_config.get("features_hyperparameters"),
@@ -37,14 +37,28 @@ def get_model_from_config(model_config: Dict, dataset, task_type, save_dir,
                           data_path, smiles_columns, targets_columns, 
                           features_generators, kernel,
                           n_jobs, seed, logger) -> Callable:
-    try:
-        features_size = dataset.features_size()
-    except:
+    data_format = model_config["data_format"]
+    if data_format == "mgktools":
+        smiles_full = dataset.X_smiles.ravel()
         features_size = None
+    else:
+        smiles_full = None
+        features_size = dataset.features_size()
     return get_model(
         data_format=model_config["data_format"],
         task_type=task_type,
         model=model_config.get("model"),
+        kernel=kernel,
+        uncertainty_type=model_config.get("uncertainty_type"),
+        alpha=model_config.get("alpha"),
+        C=model_config.get("C"),
+        booster=model_config.get("booster"),
+        n_estimators=model_config.get("n_estimators") or 100,
+        max_depth=model_config.get("max_depth"),
+        learning_rate=model_config.get("learning_rate") or 0.1,
+        tokenizer=model_config.get("tokenizer"),
+        smiles_full=smiles_full,
+        embedding_size=model_config.get("embedding_size") or 64,
         save_dir=save_dir,
         data_path=data_path,
         smiles_columns=smiles_columns,
@@ -74,15 +88,10 @@ def get_model_from_config(model_config: Dict, dataset, task_type, save_dir,
         freeze_first_only=model_config.get("freeze_first_only") or False,
         mpn_path=model_config.get("mpn_path"),
         freeze_mpn=model_config.get("freeze_mpn") or False,
+        uncertainty_method=model_config.get("uncertainty_method"),
+        uncertainty_dropout_p=model_config.get("uncertainty_dropout_p") or 0.1,
+        dropout_sampling_size=model_config.get("dropout_sampling_size") or 10,
         continuous_fit=model_config.get("continuous_fit") or False,
-        kernel=kernel,
-        uncertainty_type=model_config.get("uncertainty_type"),
-        alpha=model_config.get("alpha"),
-        C=model_config.get("C"),
-        booster=model_config.get("booster"),
-        n_estimators=model_config.get("n_estimators") or 100,
-        max_depth=model_config.get("max_depth"),
-        learning_rate=model_config.get("learning_rate") or 0.1,
         n_jobs=n_jobs,
         seed=seed,
         logger=logger
