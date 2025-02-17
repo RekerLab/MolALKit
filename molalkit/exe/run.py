@@ -37,9 +37,10 @@ def molalkit_run(arguments=None):
         for _ in range(args.n_select):
             active_learner.step_select()
             logger.debug("Select step %d" % _)
-        for _ in range(args.n_forget):
-            active_learner.step_forget()
-            logger.debug("Forget step %d" % _)
+        if args.f_min_train_size is None or len(active_learner.datasets_train[0]) >= args.f_min_train_size:
+            for _ in range(args.n_forget):
+                active_learner.step_forget()
+                logger.debug("Forget step %d" % _)
         if args.evaluate_stride is not None and i % args.evaluate_stride == 0:
             active_learner.evaluate()
             logger.debug("Evaluate step")
