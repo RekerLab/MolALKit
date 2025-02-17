@@ -16,18 +16,22 @@ MODEL_CONFIGS = [
     "SupportVectorMachine_MarginalizedGraphKernel_Config",
     "SupportVectorMachine_RBFKernelRDKitNorm_Config",
     "SupportVectorMachine_MarginalizedGraphKernel+RBFKernelRDKitNorm_Config",
-    "XGBoost_Morgan_Config"
+    "XGBoost_Morgan_Config",
+    "LSTM_SMILES_Config",
+    "LSTM_SELFIES_Config",
+    "RNN_SMILES_Config",
+    "RNN_SELFIES_Config",
 ]
 MODEL_CONFIGS_REGRESSION = [
     "MLP_RDKitNorm_Regression_Config",
-    "MLP_RDKitNorm_Regression_MVE_Config",
-    "MLP_RDKitNorm_Regression_Evidential_Config",
     "DMPNN_Regression_Config",
-    "DMPNN_Regression_MVE_Config",
-    "DMPNN_Regression_Evidential_Config",
+    "DMPNN_RegressionDropout_Config",
+    "DMPNN_RegressionEnsemble_Config",
+    "DMPNN_RegressionMVE_Config",
+    "DMPNN_RegressionEvidential_Config",
+    "DMPNN_RegressionEvidentialAleatoric_Config",
+    "DMPNN_RegressionEvidentialEpistemic_Config",
     "DMPNN+RDKitNorm_Regression_Config",
-    "DMPNN+RDKitNorm_Regression_MVE_Config",
-    "DMPNN+RDKitNorm_Regression_Evidential_Config",
 ]
 MODELS_CONFIGS_CLASSIFICATION = [
     "BernoulliNB_RDKitNorm_Config",
@@ -42,6 +46,8 @@ MODELS_CONFIGS_CLASSIFICATION = [
     "GaussianProcessRegressionDecisionBoundaryUncertainty_MarginalizedGraphKernel+RBFKernelRDKitNorm_Config",
     "MLP_Morgan_BinaryClassification_Config",
     "DMPNN_BinaryClassification_Config",
+    "DMPNN_BinaryClassificationDropout_Config",
+    "DMPNN_BinaryClassificationEnsemble_Config",
     "DMPNN+RDKitNorm_BinaryClassification_Config",
 ]
 

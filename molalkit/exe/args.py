@@ -335,7 +335,7 @@ class DatasetModelArgs(DatasetArgs, ModelArgs):
                 dataset=self.datasets_full[i],
                 task_type=self.task_type,
                 save_dir=self.save_dir,
-                data_path=self.data_path,
+                data_path="%s/full.csv" % self.save_dir,
                 smiles_columns=self.smiles_columns,
                 targets_columns=self.targets_columns,
                 features_generators=self.features_generators[i],

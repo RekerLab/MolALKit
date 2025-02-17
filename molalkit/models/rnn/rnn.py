@@ -170,7 +170,7 @@ class RNN:
     def predict_uncertainty(self, pred_data):
         assert self.task_type == "binary", "Uncertainty estimation is only available for binary classification"
         preds = self.predict_value(pred_data)
-        preds = np.concatenate([preds, 1-preds], axis=1)
+        preds = np.array([preds, 1-preds]).T
         return (0.25 - np.var(preds, axis=1)) * 4
 
     def get_dataloader(self, data: Dataset):

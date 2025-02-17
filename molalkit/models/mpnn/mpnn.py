@@ -13,10 +13,8 @@ from chemprop.nn_utils import param_count, param_count_all
 from chemprop.models import MoleculeModel
 from chemprop.train.loss_functions import get_loss_func
 from chemprop.train import train
-from chemprop.train.predict import predict
 from chemprop.args import TrainArgs, PredictArgs
-from chemprop.train.run_training import save_checkpoint, MODEL_FILE_NAME
-from chemprop.train.make_predictions import make_predictions, set_features, predict_and_save
+from chemprop.train.make_predictions import set_features, predict_and_save
 
 
 class MPNN:
@@ -265,7 +263,7 @@ class MPNN:
     def predict_uncertainty(self, pred_data):
         if self.args_predict.uncertainty_method is None and self.args.dataset_type == "classification":
             preds = np.array(self.predict(pred_data)[0])
-            preds = np.concatenate([preds, 1-preds], axis=1)
+            preds = np.array([preds, 1-preds]).T
             return (0.25 - np.var(preds, axis=1)) * 4
         else:
             return self.predict(pred_data)[1]
