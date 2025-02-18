@@ -605,4 +605,4 @@ class LearningArgs(DatasetModelArgs, SelectorArgs, ForgetterArgs, EvaluationArgs
             elif dn < 0:
                 self.max_iter = len(self.datasets_train[0]) // (-dn) - 1
             else:
-                self.max_iter = 100
+                self.max_iter = len(self.datasets_pool[0]) // self.n_select
