@@ -507,9 +507,9 @@ class ForgetterArgs(Tap):
     @property
     def forgetter(self):
         if not hasattr(self, "_forgetter"):
-            if self.forget_method == "forget_first":
+            if self.forget_method == "first":
                 self._forgetter = FirstForgetter(batch_size=self.f_batch_size)
-            elif self.forget_method == "forget_random":
+            elif self.forget_method == "random":
                 self._forgetter = RandomForgetter(batch_size=self.f_batch_size, seed=self.seed)
             elif self.forget_method == "min_oob_uncertainty":
                 self._forgetter = MinOOBUncertaintyForgetter(batch_size=self.f_batch_size, seed=self.seed)

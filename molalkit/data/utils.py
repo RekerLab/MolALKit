@@ -19,6 +19,10 @@ def get_data(data_format: Literal["mgktools", "chemprop"],
     df = pd.read_csv(path)
     if len(df) == 0:
         return None
+    # Check if there are missing values in the target columns
+    for targets_column in targets_columns:
+        assert not df[targets_column].isnull().any(), f"Missing values in the target column {targets_column}."
+
     if data_format == "chemprop":
         from chemprop.data.utils import get_data
         assert features_columns is None
