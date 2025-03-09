@@ -62,7 +62,7 @@ def get_subset_from_idx(dataset, idx):
     idx: List[int]
         index of the subset
     """
-    subset = copy.deepcopy(dataset)
+    subset = copy.copy(dataset)
     subset.data = [data for i, data in enumerate(dataset.data) if i in idx]
     assert len(subset) == len(idx), "Subset length does not match the index length, indicating that some indices are not found in the parent dataset."
     return subset
@@ -80,7 +80,7 @@ def get_subset_from_uidx(dataset, id2datapoint, uidx):
     idx: List[int]
         index of the subset.
     """
-    dataset_ = copy.deepcopy(dataset)
+    dataset_ = copy.copy(dataset)
     dataset_.data = []
     for i in uidx:
         dataset_.data.append(id2datapoint[i])

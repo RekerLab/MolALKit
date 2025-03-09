@@ -366,10 +366,10 @@ class DatasetModelArgs(DatasetArgs, ModelArgs):
         if not hasattr(self, "_datasets_empty"):
             self._datasets_empty = []
             for dataset in self.datasets_full:
-                data = copy.deepcopy(dataset)
-                data.data = []
-                self._datasets_empty.append(data)
-        return copy.deepcopy(self._datasets_empty)
+                dataset_empty = copy.copy(dataset)
+                dataset_empty.data = []
+                self._datasets_empty.append(dataset_empty)
+        return self._datasets_empty.copy()
 
     @property
     def id2datapoints(self) -> List[Dict]:
@@ -396,7 +396,7 @@ class DatasetModelArgs(DatasetArgs, ModelArgs):
         if not hasattr(self, "_datasets_pool"):
             df = pd.read_csv("%s/pool_init.csv" % self.save_dir)
             self._datasets_pool = [get_subset_from_uidx(dataset, id2datapoint, df["uidx"].tolist()) 
-                                    for dataset, id2datapoint in zip(self.datasets_empty, self.id2datapoints)]
+                                   for dataset, id2datapoint in zip(self.datasets_empty, self.id2datapoints)]
         return self._datasets_pool
 
     @property

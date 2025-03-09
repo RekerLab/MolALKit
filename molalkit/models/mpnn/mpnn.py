@@ -15,6 +15,7 @@ from chemprop.train.loss_functions import get_loss_func
 from chemprop.train import train
 from chemprop.args import TrainArgs, PredictArgs
 from chemprop.train.make_predictions import set_features, predict_and_save
+from molalkit.data.utils import get_subset_from_idx
 
 
 class MPNN:
@@ -226,11 +227,30 @@ class MPNN:
             # save_checkpoint(os.path.join(save_dir, MODEL_FILE_NAME), model, scaler,
             #                 features_scaler, None, None, args)
 
-    def predict(self, pred_data):
+    def predict(self, pred_data, batch_size: int = 100000):
+        """
+        Generate predictions for input data using trained models.
+        
+        Parameters
+        ----------
+        pred_data : MoleculeDataset
+            Dataset containing molecules to make predictions on. Must be preprocessed
+            in the same way as the training data.
+        
+        batch_size : int, optional (default=100000)
+            Number of molecules to process in each batch. Controls memory usage
+            during prediction. Larger values process data faster but require more memory.
+            
+        Returns
+        -------
+        np.ndarray
+            Array of shape (n_molecules,) containing model predictions for each molecule.
+        
+        np.ndarray
+            Array of shape (n_molecules,) containing uncertainty estimates for each prediction.
+        """
         args = self.args_predict
         train_args = self.args
-        models = (model for model in self.models)
-        scalers = (scaler for scaler in self.scalers)
         num_tasks = train_args.num_tasks
         task_names = train_args.task_names
 
@@ -238,27 +258,44 @@ class MPNN:
 
         if train_args.features_scaling:
             pred_data.normalize_features(self.scalers[0][0])
-        pred_data_loader = MoleculeDataLoader(
-            dataset=pred_data,
-            batch_size=train_args.batch_size,
-            num_workers=train_args.num_workers
-        )
-        preds, unc = predict_and_save(
-            args=args,
-            train_args=train_args,
-            test_data=pred_data,
-            task_names=task_names,
-            num_tasks=num_tasks,
-            test_data_loader=pred_data_loader,
-            full_data=pred_data,
-            full_to_valid_indices={i: i for i in range(len(pred_data))},
-            models=models,
-            scalers=scalers,
-            num_models=len(self.models),
-            return_invalid_smiles=False,
-            save_results=False
-        )
-        return np.array(preds).ravel(), np.array(unc).ravel()
+
+        # Initialize arrays to store predictions and uncertainties
+        all_preds = []
+        all_uncs = []
+        # Calculate total number of batches
+        total_batches = (len(pred_data) + batch_size - 1) // batch_size
+        print(total_batches)
+        # Process data in chunks of 100,000
+        for i in range(total_batches):
+            models = (model for model in self.models)
+            scalers = (scaler for scaler in self.scalers)
+
+            start = i * batch_size
+            end = min((i + 1) * batch_size, len(pred_data))
+            test_data = get_subset_from_idx(pred_data, range(start, end))
+            test_data_loader = MoleculeDataLoader(
+                dataset=test_data,
+                batch_size=train_args.batch_size,
+                num_workers=train_args.num_workers
+            )
+            preds, unc = predict_and_save(
+                args=args,
+                train_args=train_args,
+                test_data=test_data,
+                task_names=task_names,
+                num_tasks=num_tasks,
+                test_data_loader=test_data_loader,
+                full_data=pred_data,
+                full_to_valid_indices={j: j for j in range(len(pred_data))},
+                models=models,
+                scalers=scalers,
+                num_models=len(self.models),
+                return_invalid_smiles=False,
+                save_results=False
+            )
+            all_preds += np.array(preds).ravel().tolist()
+            all_uncs += np.array(unc).ravel().tolist()
+        return np.array(all_preds), np.array(all_uncs)
 
     def predict_uncertainty(self, pred_data):
         if self.args_predict.uncertainty_method is None and self.args.dataset_type == "classification":
