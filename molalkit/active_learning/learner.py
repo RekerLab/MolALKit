@@ -11,7 +11,7 @@ from molalkit.active_learning.selector import BaseSelector, RandomSelector
 from molalkit.active_learning.forgetter import BaseForgetter, RandomForgetter, FirstForgetter
 from molalkit.active_learning.utils import eval_metric_func
 from molalkit.data.utils import get_subset_from_uidx
-from molalkit.models.mpnn.mpnn import MPNN, TrainArgs
+from molalkit.models.mpnn.mpnn import MPNN, TrainArgs, PredictArgs
 
 
 class NpEncoder(json.JSONEncoder):
@@ -233,11 +233,13 @@ class ActiveLearner:
         for model in store["models"]:
             if isinstance(model, MPNN):
                 model.args = model.args.as_dict()
+                model.args_predict = model.args_predict.as_dict()
         pickle.dump(store, open(f_al, "wb"), protocol=4)
         # transform back to TrainArgs
         for model in store["models"]:
             if isinstance(model, MPNN):
                 model.args = TrainArgs().from_dict(model.args, skip_unsettable=True)
+                model.args_predict = PredictArgs().from_dict(model.args_predict, skip_unsettable=True)
 
     @classmethod
     def load(cls, path, filename="al.pkl"):
@@ -247,6 +249,7 @@ class ActiveLearner:
         for model in store["models"]:
             if isinstance(model, MPNN):
                 model.args = TrainArgs().from_dict(model.args, skip_unsettable=True)
+                model.args_predict = PredictArgs().from_dict(model.args_predict, skip_unsettable=True)
         input = {}
         for key in ["save_dir", "selector", "forgetter", "models", 
                     "id2datapoints", "datasets_train", "datasets_pool"]:
