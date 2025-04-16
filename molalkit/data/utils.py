@@ -29,7 +29,8 @@ def get_data(data_format: Literal["mgktools", "chemprop"],
         dataset = get_data(path=path,
                            smiles_columns=smiles_columns,
                            target_columns=targets_columns,
-                           features_generator=features_generators)
+                           features_generator=features_generators,
+                           n_jobs=n_jobs)
     else:
         from mgktools.data.data import Dataset
         dataset = Dataset.from_df(df=df,

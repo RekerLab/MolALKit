@@ -229,7 +229,7 @@ class MPNN:
             # save_checkpoint(os.path.join(save_dir, MODEL_FILE_NAME), model, scaler,
             #                 features_scaler, None, None, args)
 
-    def predict(self, pred_data, batch_size: int = 100000):
+    def predict(self, pred_data, batch_size: int = 10000):
         """
         Generate predictions for input data using trained models.
         
