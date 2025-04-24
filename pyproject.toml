@@ -37,7 +37,7 @@ PyPi = "https://pypi.org/project/molalkit"
 molalkit_run = "molalkit.exe.run:molalkit_run"
 
 [tool.setuptools.package-data]
-"*" = ["data/datasets/*.csv", "models/configs/*Config"]
+"*" = ["data/datasets/*.csv", "models/configs/*Config", "models/graphgps/*yaml"]
 
 [tool.setuptools.packages.find]
 where = ["."]  # list of folders that contain the packages (["."] by default)

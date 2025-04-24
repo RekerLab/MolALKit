@@ -351,7 +351,8 @@ class DatasetModelArgs(DatasetArgs, ModelArgs):
         if not hasattr(self, "_datasets_full"):
             self._datasets_full = [get_data(
                 data_format=model_config["data_format"],
-                path="%s/full.csv" % self.save_dir,
+                save_dir=self.save_dir,
+                file_name="full.csv",
                 smiles_columns=self.smiles_columns,
                 targets_columns=self.targets_columns,
                 features_columns=self.features_columns,

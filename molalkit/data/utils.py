@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from typing import List, Literal
+import os
 import copy
 import pandas as pd
 
 
-def get_data(data_format: Literal["mgktools", "chemprop"],
-             path: str,
+def get_data(data_format: Literal["mgktools", "chemprop", "graphgps"],
+             save_dir: str,
+             file_name: str,
              smiles_columns: List[str] = None,
              targets_columns: List[str] = None,
              features_columns: List[str] = None,
@@ -16,6 +18,7 @@ def get_data(data_format: Literal["mgktools", "chemprop"],
              n_jobs: int = 8):
     if features_generators is not None and features_combination is None:
         features_combination = "concat"
+    path = os.path.join(save_dir, file_name)
     df = pd.read_csv(path)
     if len(df) == 0:
         return None
@@ -30,6 +33,13 @@ def get_data(data_format: Literal["mgktools", "chemprop"],
                            smiles_columns=smiles_columns,
                            target_columns=targets_columns,
                            features_generator=features_generators,
+                           n_jobs=n_jobs)
+    elif data_format == "graphgps":
+        from molalkit.data.graphgps import get_data
+        dataset = get_data(path=path, save_dir=save_dir,
+                           smiles_columns=smiles_columns,
+                           targets_columns=targets_columns,
+                           features_generators=features_generators,
                            n_jobs=n_jobs)
     else:
         from mgktools.data.data import Dataset
