@@ -41,6 +41,9 @@ def get_model_from_config(model_config: Dict, dataset, task_type, save_dir,
     if data_format == "mgktools":
         smiles_full = dataset.X_smiles.ravel()
         features_size = None
+    elif data_format == "graphgps":
+        smiles_full = None
+        features_size = None
     else:
         smiles_full = None
         features_size = dataset.features_size()
@@ -92,6 +95,7 @@ def get_model_from_config(model_config: Dict, dataset, task_type, save_dir,
         uncertainty_dropout_p=model_config.get("uncertainty_dropout_p") or 0.1,
         dropout_sampling_size=model_config.get("dropout_sampling_size") or 10,
         continuous_fit=model_config.get("continuous_fit") or False,
+        cfg_path=model_config.get("cfg"),
         n_jobs=n_jobs,
         seed=seed,
         logger=logger
