@@ -98,7 +98,7 @@ class MPNN:
         args.task_names = get_task_names(path=args.data_path, smiles_columns=args.smiles_columns,
                                          target_columns=args.target_columns, ignore_columns=args.ignore_columns)
         args._parsed = True
-        self.args = args
+        self.chemprop_train_args = args
         self.continuous_fit = continuous_fit
         self.logger = logger
         args_predict = PredictArgs()
@@ -111,12 +111,12 @@ class MPNN:
         # args_predict.process_args()
         args_predict._parsed = True
         args_predict.checkpoint_paths = [None] * args.ensemble_size
-        self.args_predict = args_predict
+        self.chemprop_predict_args = args_predict
 
-    def fit_molalkit(self, train_data):
+    def fit_molalkit(self, train_data, iteration: int = 0):
         if not self.continuous_fit and torch.cuda.is_available():
             torch.cuda.empty_cache()
-        args = self.args
+        args = self.chemprop_train_args
         args.train_data_size = len(train_data)
         logger = self.logger
         if logger is not None:
@@ -251,8 +251,8 @@ class MPNN:
         np.ndarray
             Array of shape (n_molecules,) containing uncertainty estimates for each prediction.
         """
-        args = self.args_predict
-        train_args = self.args
+        args = self.chemprop_predict_args
+        train_args = self.chemprop_train_args
         num_tasks = train_args.num_tasks
         task_names = train_args.task_names
 
@@ -299,7 +299,7 @@ class MPNN:
         return np.array(all_preds), np.array(all_uncs)
 
     def predict_uncertainty(self, pred_data):
-        if self.args_predict.uncertainty_method is None and self.args.dataset_type == "classification":
+        if self.chemprop_predict_args.uncertainty_method is None and self.chemprop_train_args.dataset_type == "classification":
             preds = np.array(self.predict(pred_data)[0])
             preds = np.array([preds, 1-preds]).T
             return (0.25 - np.var(preds, axis=1)) * 4

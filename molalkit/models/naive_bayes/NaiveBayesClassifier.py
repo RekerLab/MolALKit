@@ -5,7 +5,7 @@ from molalkit.models.base import BaseSklearnModel
 
 
 class BernoulliNBClassifier(BernoulliNB, BaseSklearnModel):
-    def fit_molalkit(self, train_data):
+    def fit_molalkit(self, train_data, iteration: int = 0):
         return self.fit_molalkit_(train_data, self)
 
     def predict_uncertainty(self, pred_data):
@@ -16,7 +16,7 @@ class BernoulliNBClassifier(BernoulliNB, BaseSklearnModel):
 
 
 class MultinomialNBClassifier(MultinomialNB, BaseSklearnModel):
-    def fit_molalkit(self, train_data):
+    def fit_molalkit(self, train_data, iteration: int = 0):
         return self.fit_molalkit_(train_data, self)
 
     def predict_uncertainty(self, pred_data):
@@ -27,7 +27,7 @@ class MultinomialNBClassifier(MultinomialNB, BaseSklearnModel):
 
 
 class GaussianNBClassifier(GaussianNB, BaseSklearnModel):
-    def fit_molalkit(self, train_data):
+    def fit_molalkit(self, train_data, iteration: int = 0):
         return self.fit_molalkit_(train_data, self)
 
     def predict_uncertainty(self, pred_data):

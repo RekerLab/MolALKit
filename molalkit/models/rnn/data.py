@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-from typing import List, Dict, Tuple, Union
-import torch
+from typing import List, Tuple, Union
 from torch.utils.data import Dataset
 from molalkit.models.rnn.tokenizer import BaseTokenizer
 

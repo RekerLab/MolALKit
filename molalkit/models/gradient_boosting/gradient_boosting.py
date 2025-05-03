@@ -6,7 +6,7 @@ from molalkit.models.base import BaseSklearnModel
 
 
 class GradientBoostingClassifier(GBC, BaseSklearnModel):
-    def fit_molalkit(self, train_data):
+    def fit_molalkit(self, train_data, iteration: int = 0):
         return self.fit_molalkit_(train_data, self)
 
     def predict_uncertainty(self, pred_data):
@@ -17,7 +17,7 @@ class GradientBoostingClassifier(GBC, BaseSklearnModel):
 
 
 class GradientBoostingRegressor(GBR, BaseSklearnModel):
-    def fit_molalkit(self, train_data):
+    def fit_molalkit(self, train_data, iteration: int = 0):
         return self.fit_molalkit_(train_data, self)
 
     def predict_uncertainty(self, pred_data):

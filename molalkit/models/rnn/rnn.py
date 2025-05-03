@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from typing import Literal
-from tqdm import tqdm, trange
+from tqdm import trange
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import numpy as np
 from torch.nn.utils.rnn import pad_sequence
 from mgktools.data.data import Dataset
@@ -111,7 +111,7 @@ class RNN:
         self.batch_size = batch_size
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    def fit_molalkit(self, train_data: Dataset):
+    def fit_molalkit(self, train_data: Dataset, iteration: int = 0):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         # initialize model

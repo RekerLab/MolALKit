@@ -24,9 +24,9 @@ keywords = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "mgktools==3.1.0", # new version print annoying warnings
-    "xgboost",
-    "selfies"
+    "mgktools==3.1.0",
+    "selfies",
+    "xgboost"
 ]
 
 [project.urls]
@@ -37,7 +37,7 @@ PyPi = "https://pypi.org/project/molalkit"
 molalkit_run = "molalkit.exe.run:molalkit_run"
 
 [tool.setuptools.package-data]
-"*" = ["data/datasets/*.csv", "models/configs/*Config", "models/graphgps/*yaml"]
+"*" = ["data/datasets/*.csv", "models/configs/*Config", "models/graphgps/*yaml", "models/molformer/bert_vocab.txt"]
 
 [tool.setuptools.packages.find]
 where = ["."]  # list of folders that contain the packages (["."] by default)

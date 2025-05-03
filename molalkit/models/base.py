@@ -6,7 +6,7 @@ import numpy as np
 
 class BaseModel(ABC):
     @abstractmethod
-    def fit_molalkit(self, data):
+    def fit_molalkit(self, data, iteration: int = 0):
         pass
 
     @abstractmethod
