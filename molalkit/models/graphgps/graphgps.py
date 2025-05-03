@@ -57,8 +57,8 @@ class GraphGPS:
                 losses.append(loss)
             df_loss[f"model_{model_idx}"] = losses
             self.models.append(model)
-        df_loss.to_csv(os.path.join(cfg.out_dir, "%d" % iteration, "loss.csv"), index=False)        
-
+        df_loss.to_csv(os.path.join(self.save_dir, "loss-iter%d.csv" % iteration), index=False)
+        
     def predict_value(self, pred_data):
         self.cfg_init()
         test_data_loader = DataLoader(pred_data.dataset_pyg,
@@ -70,10 +70,9 @@ class GraphGPS:
                 preds = []
                 model.eval()
                 for batch in test_data_loader:
-                    print(batch.smiles)
                     batch.to(torch.device(cfg.accelerator))
                     pred = model(batch)
-                    preds.append(pred[0].detach().to('cpu', non_blocking=True))
+                    preds.append(pred[0].detach().cpu().numpy())
                 predictions.append(np.concatenate(preds))
         predictions = np.mean(predictions, axis=0).ravel()
         return predictions

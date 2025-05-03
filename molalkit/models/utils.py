@@ -19,7 +19,7 @@ def get_model(data_format: Literal["mgktools", "chemprop", "graphgps"],
               model: Literal["random_forest", "naive_bayes", "logistic_regression", "gaussian_process_regression",
                              "gaussian_process_classification", "support_vector_machine", "adaboost", "xgboost", 
                              "decision_tree", "extra_trees", "MultinomialNB", "BernoulliNB", "GaussianNB", 
-                             "LSTM", "GRU"] = "random_forest",
+                             "LSTM", "GRU", "MolFormer"] = "random_forest",
               kernel=None,
               uncertainty_type: Literal["value", "uncertainty"] = None,
               alpha: Union[float, str] = 1e-8,
@@ -69,6 +69,13 @@ def get_model(data_format: Literal["mgktools", "chemprop", "graphgps"],
               continuous_fit: bool = False,
               # graphgps arguments
               cfg_path: str = None,
+              # MolFormer arguments
+              pretrained_path: str = None,
+              n_head: int = 12,
+              n_layer: int = 12,
+              n_embd: int = 768,
+              d_dropout: float = 0.1,
+              num_feats: int = 32,
               logger: Logger = None):
     if alpha.__class__ == str:
         alpha = float(open(alpha).read())
@@ -162,6 +169,14 @@ def get_model(data_format: Literal["mgktools", "chemprop", "graphgps"],
                        epochs=epochs,
                        ffn_num_layers=ffn_num_layers,
                        batch_size=batch_size)
+        elif model == "MolFormer":
+            from molalkit.models.molformer.molformer import MolFormer
+            return MolFormer(save_dir=save_dir, task_type=task_type, pretrained_path=pretrained_path,
+                             num_tasks=len(target_columns),
+                             n_head=n_head, n_layer=n_layer, n_embd=n_embd, d_dropout=d_dropout,
+                             dropout=dropout, learning_rate=learning_rate, 
+                             num_feats=num_feats, ensemble_size=ensemble_size, epochs=epochs,
+                             batch_size=batch_size, num_workers=n_jobs, seed=seed)
         else:
             raise ValueError(f"unknown model: {model}")
     elif data_format == "chemprop":

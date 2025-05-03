@@ -11,7 +11,6 @@ from molalkit.active_learning.selector import BaseSelector, RandomSelector
 from molalkit.active_learning.forgetter import BaseForgetter, RandomForgetter, FirstForgetter
 from molalkit.active_learning.utils import eval_metric_func
 from molalkit.data.utils import get_subset_from_uidx
-from molalkit.models.mpnn.mpnn import MPNN, TrainArgs, PredictArgs
 
 
 class NpEncoder(json.JSONEncoder):
@@ -139,7 +138,7 @@ class ActiveLearner:
         assert self.selector is not None, "You need to provide a selector before step_select()."
         # train the model if it is not trained in the evaluation step, and the selection method is not random.
         if not self.model_fitted and not isinstance(self.selector, RandomSelector):
-            self.models[0].fit_molalkit(self.datasets_train[0])
+            self.models[0].fit_molalkit(self.datasets_train[0], iteration=self.current_iter)
         selected_idx, acquisition, remain_idx = self.selector(model=self.models[0],
                                                               dataset_pool=self.datasets_pool[0],
                                                               kernel=self.kernel,
@@ -165,7 +164,7 @@ class ActiveLearner:
         assert self.forgetter is not None, "You need to provide a forgetter before step_forget()."
         # train the model if the forgetter is not random or first.
         if not self.model_fitted and not self.forgetter.__class__ in [RandomForgetter, FirstForgetter]:
-            self.models[0].fit_molalkit(self.datasets_train[0])
+            self.models[0].fit_molalkit(self.datasets_train[0], iteration=self.current_iter)
         # forget algorithm is applied.
         forget_idx, acquisition, remain_idx = self.forgetter(model=self.models[0],
                                                              dataset_train=self.datasets_train[0],
@@ -231,15 +230,16 @@ class ActiveLearner:
         store = self.__dict__.copy()
         # Chemprop TrainArgs is unpicklable, transform into dict.
         for model in store["models"]:
-            if isinstance(model, MPNN):
-                model.args = model.args.as_dict()
-                model.args_predict = model.args_predict.as_dict()
+            if hasattr(model, "chemprop_train_args"):
+                model.chemprop_train_args = model.chemprop_train_args.as_dict()
+                model.chemprop_predict_args = model.chemprop_predict_args.as_dict()
         pickle.dump(store, open(f_al, "wb"), protocol=4)
         # transform back to TrainArgs
         for model in store["models"]:
-            if isinstance(model, MPNN):
-                model.args = TrainArgs().from_dict(model.args, skip_unsettable=True)
-                model.args_predict = PredictArgs().from_dict(model.args_predict, skip_unsettable=True)
+            if hasattr(model, "chemprop_train_args"):
+                from chemprop.args import TrainArgs, PredictArgs
+                model.chemprop_train_args = TrainArgs().from_dict(model.chemprop_train_args, skip_unsettable=True)
+                model.chemprop_predict_args = PredictArgs().from_dict(model.chemprop_predict_args, skip_unsettable=True)
 
     @classmethod
     def load(cls, path, filename="al.pkl"):
@@ -247,9 +247,10 @@ class ActiveLearner:
         store = pickle.load(open(f_al, "rb"))
         # transform Chemprop TrainArgs from dict back to TrainArgs
         for model in store["models"]:
-            if isinstance(model, MPNN):
-                model.args = TrainArgs().from_dict(model.args, skip_unsettable=True)
-                model.args_predict = PredictArgs().from_dict(model.args_predict, skip_unsettable=True)
+            if hasattr(model, "chemprop_train_args"):
+                from chemprop.args import TrainArgs, PredictArgs
+                model.chemprop_train_args = TrainArgs().from_dict(model.chemprop_train_args, skip_unsettable=True)
+                model.chemprop_predict_args = PredictArgs().from_dict(model.chemprop_predict_args, skip_unsettable=True)
         input = {}
         for key in ["save_dir", "selector", "forgetter", "models", 
                     "id2datapoints", "datasets_train", "datasets_pool"]:
