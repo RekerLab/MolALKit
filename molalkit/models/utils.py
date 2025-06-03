@@ -67,6 +67,7 @@ def get_model(data_format: Literal["mgktools", "chemprop", "graphgps"],
               uncertainty_dropout_p: float = 0.1,
               dropout_sampling_size: int = 10,
               continuous_fit: bool = False,
+              weight_decay: float = 0.0,
               # graphgps arguments
               cfg_path: str = None,
               # MolFormer arguments
@@ -217,6 +218,7 @@ def get_model(data_format: Literal["mgktools", "chemprop", "graphgps"],
                     n_jobs=n_jobs,
                     seed=seed,
                     continuous_fit=continuous_fit,
+                    weight_decay=weight_decay,
                     logger=logger or EmptyLogger())
     elif data_format == "graphgps":
         from molalkit.models.graphgps.graphgps import GraphGPS

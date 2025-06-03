@@ -60,6 +60,7 @@ class MPNN:
                  # other parameters
                  continuous_fit: bool = False,
                  logger: Logger = None,
+                 weight_decay: float = 0.0,
                  ):
         args = TrainArgs()
         args.save_dir = save_dir
@@ -101,6 +102,7 @@ class MPNN:
         self.chemprop_train_args = args
         self.continuous_fit = continuous_fit
         self.logger = logger
+        self.weight_decay = weight_decay
         args_predict = PredictArgs()
         args_predict.uncertainty_method = uncertainty_method
         args_predict.uncertainty_dropout_p = uncertainty_dropout_p
@@ -117,6 +119,7 @@ class MPNN:
         if not self.continuous_fit and torch.cuda.is_available():
             torch.cuda.empty_cache()
         args = self.chemprop_train_args
+        args.weight_decay = self.weight_decay
         args.train_data_size = len(train_data)
         logger = self.logger
         if logger is not None:

@@ -8,5 +8,7 @@
     "ffn_hidden_size": 300,
     "dropout": 0.0,
     "batch_size": 50,
-    "ensemble_size": 1
+    "ensemble_size": 1,
+    "continuous_fit": true,
+    "weight_decay": 0.001
 }
