@@ -43,6 +43,12 @@ class MPNN:
                  mpn_shared: bool = False,
                  atom_messages: bool = False,
                  undirected: bool = False,
+                 weight_decay: float = 0.0,
+                 cbp: bool = False,
+                 replacement_rate: float = 0.00001,
+                 maturity_threshold: int = 100,
+                 reinit_weights: Literal['xavier', 'kaiming', 'lecun', 'default'] = 'xavier',
+                 decay_rate: float = 0.99,
                  n_jobs: int = 8,
                  class_balance: bool = False,
                  checkpoint_dir: str = None,
@@ -86,6 +92,12 @@ class MPNN:
         args.mpn_shared = mpn_shared
         args.atom_messages = atom_messages
         args.undirected = undirected
+        args.weight_decay = weight_decay
+        args.cbp = cbp
+        args.replacement_rate = replacement_rate
+        args.maturity_threshold = maturity_threshold
+        args.reinit_weights = reinit_weights
+        args.decay_rate = decay_rate
         args.num_workers = n_jobs
         args.class_balance = class_balance
         args.checkpoint_dir = checkpoint_dir
