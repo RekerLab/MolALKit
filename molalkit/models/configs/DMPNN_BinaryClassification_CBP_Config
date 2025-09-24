@@ -11,6 +11,7 @@
     "ensemble_size": 1,
     "continuous_fit": true,
     "weight_decay": 0.0,
+    "const_lr": true,
     "cbp": true,
     "replacement_rate": 0.00001,
     "maturity_threshold": 100,
