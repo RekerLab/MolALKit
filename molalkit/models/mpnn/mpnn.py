@@ -43,6 +43,7 @@ class MPNN:
                  mpn_shared: bool = False,
                  atom_messages: bool = False,
                  undirected: bool = False,
+                 const_lr: bool = False,
                  weight_decay: float = 0.0,
                  cbp: bool = False,
                  replacement_rate: float = 0.00001,
@@ -91,6 +92,7 @@ class MPNN:
         args.mpn_shared = mpn_shared
         args.atom_messages = atom_messages
         args.undirected = undirected
+        args.const_lr = const_lr
         args.weight_decay = weight_decay
         args.cbp = cbp
         args.replacement_rate = replacement_rate
