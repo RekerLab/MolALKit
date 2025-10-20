@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch.optim.lr_scheduler import ExponentialLR
 from chemprop.data import get_class_sizes, MoleculeDataLoader, get_task_names
-from chemprop.utils import build_optimizer, build_lr_scheduler, makedirs, load_mpn_model
+from chemprop.utils import build_optimizer, build_lr_scheduler, makedirs, load_mpn_model, save_checkpoint, load_checkpoint
 from chemprop.nn_utils import param_count, param_count_all
 from chemprop.models import MoleculeModel
 from chemprop.train.loss_functions import get_loss_func
@@ -240,7 +240,7 @@ class MPNN:
 
             self.scalers.append((scaler, features_scaler, None, None))
             # save the model after training
-            # save_checkpoint(os.path.join(save_dir, MODEL_FILE_NAME), model, scaler,
+            # save_checkpoint(os.path.join(save_dir, 'model.pth'), model, scaler,
             #                 features_scaler, None, None, args)
 
     def predict(self, pred_data, batch_size: int = 10000):
@@ -322,3 +322,22 @@ class MPNN:
 
     def predict_value(self, pred_data):
         return self.predict(pred_data)[0]
+
+    def save_checkpoint(self):
+        args = self.chemprop_train_args
+        for model_idx, model in enumerate(self.models):
+            save_dir = os.path.join(args.save_dir, f"model_{model_idx}")
+            makedirs(save_dir)
+            scaler, features_scaler, _, _ = self.scalers[model_idx]
+            save_checkpoint(os.path.join(save_dir, 'model.pth'), model, scaler,
+                            features_scaler, None, None, args)
+
+    def load_checkpoint(self):
+        args = self.chemprop_train_args
+        self.models = []
+        self.scalers = []
+        for model_idx, model in enumerate(self.models):
+            save_dir = os.path.join(args.save_dir, f"model_{model_idx}")
+            model, scaler, features_scaler, _, _ = load_checkpoint(os.path.join(save_dir, 'model.pth'), args.device)
+            self.models.append(model)
+            self.scalers.append((scaler, features_scaler, None, None))
