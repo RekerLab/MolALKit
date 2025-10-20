@@ -241,6 +241,7 @@ class ActiveLearner:
                 from chemprop.args import TrainArgs, PredictArgs
                 model.chemprop_train_args = TrainArgs().from_dict(model.chemprop_train_args, skip_unsettable=True)
                 model.chemprop_predict_args = PredictArgs().from_dict(model.chemprop_predict_args, skip_unsettable=True)
+                model.save_checkpoint()
 
     @classmethod
     def load(cls, path, filename="al.pkl"):
@@ -252,6 +253,7 @@ class ActiveLearner:
                 from chemprop.args import TrainArgs, PredictArgs
                 model.chemprop_train_args = TrainArgs().from_dict(model.chemprop_train_args, skip_unsettable=True)
                 model.chemprop_predict_args = PredictArgs().from_dict(model.chemprop_predict_args, skip_unsettable=True)
+                model.load_checkpoint()
         input = {}
         for key in ["save_dir", "selector", "forgetter", "models", 
                     "id2datapoints", "datasets_train", "datasets_pool"]:
