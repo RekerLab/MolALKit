@@ -334,10 +334,9 @@ class MPNN:
 
     def load_checkpoint(self):
         args = self.chemprop_train_args
-        self.models = []
-        self.scalers = []
+        models = []
         for model_idx, model in enumerate(self.models):
             save_dir = os.path.join(args.save_dir, f"model_{model_idx}")
-            model, scaler, features_scaler, _, _ = load_checkpoint(os.path.join(save_dir, 'model.pth'), args.device)
-            self.models.append(model)
-            self.scalers.append((scaler, features_scaler, None, None))
+            model1 = load_checkpoint(os.path.join(save_dir, 'model.pth'), args.device)
+            models.append(model1)
+        self.models = models
