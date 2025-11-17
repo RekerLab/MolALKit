@@ -17,8 +17,8 @@ def get_model(data_format: Literal["mgktools", "chemprop", "graphgps"],
               seed: int = 0,
               # arguments for classical machine learning models
               model: Literal["random_forest", "naive_bayes", "logistic_regression", "gaussian_process_regression",
-                             "gaussian_process_classification", "support_vector_machine", "adaboost", "xgboost", 
-                             "decision_tree", "extra_trees", "MultinomialNB", "BernoulliNB", "GaussianNB", 
+                             "gaussian_process_classification", "support_vector_machine", "adaboost", "xgboost",
+                             "decision_tree", "extra_trees", "deep_forest", "MultinomialNB", "BernoulliNB", "GaussianNB",
                              "LSTM", "GRU", "MolFormer"] = "random_forest",
               kernel=None,
               uncertainty_type: Literal["value", "uncertainty"] = None,
@@ -119,6 +119,32 @@ def get_model(data_format: Literal["mgktools", "chemprop", "graphgps"],
             assert task_type == "binary"
             from molalkit.models.extra_trees.extra_trees import ExtraTreesClassifier
             return ExtraTreesClassifier(n_estimators=n_estimators, max_depth=max_depth, n_jobs=n_jobs, random_state=seed)
+        elif model == "deep_forest":
+            assert task_type == "binary", "Deep Forest currently only supports binary classification in MolALKit"
+            from molalkit.models.deep_forest.DeepForestClassifier import DFClassifier
+            # Deep Forest parameters optimized for extremely imbalanced datasets (1-2% positive class)
+            # Key differences from RF:
+            #   - n_estimators: RF=100 (total trees), DF=8 (trees per layer per forest)
+            #   - Each DF layer has 2 forests (RF+ExtraTrees), so 8×2=16 trees per layer
+            #   - max_layers=10 with relaxed early stopping for imbalanced data
+            # Relaxed early stopping parameters:
+            #   - n_tolerant_rounds increased from 2→5 to handle validation score fluctuations
+            #   - delta reduced from 1e-5→1e-6 to accept smaller improvements
+            #   - max_depth=None to align with RF (unlimited tree depth)
+            return DFClassifier(
+                n_estimators=n_estimators if n_estimators != 100 else 8,  # 8 trees per layer (increased for stability)
+                max_layers=10,           # Maximum cascade depth
+                max_depth=max_depth,     # Tree depth (aligned with RF, default: None)
+                min_samples_split=2,     # Aligned with RF default
+                min_samples_leaf=1,      # Aligned with RF default
+                criterion='gini',        # Aligned with RF default
+                n_tolerant_rounds=5,     # Relaxed: allow 5 rounds without improvement (was 2)
+                delta=1e-6,              # Relaxed: lower improvement threshold (was 1e-5)
+                backend='custom',        # Use optimized backend (faster than 'sklearn')
+                n_jobs=n_jobs,           # Parallel jobs (aligned with RF)
+                random_state=seed,       # Random seed (aligned with RF)
+                verbose=0                # Silent mode for active learning (no training logs)
+            )
         elif model == "gaussian_process_regression":
             assert task_type in ["regression", "binary"]
             assert uncertainty_type is not None
