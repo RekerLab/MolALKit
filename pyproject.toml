@@ -42,3 +42,17 @@ molalkit_run = "molalkit.exe.run:molalkit_run"
 [tool.setuptools.packages.find]
 where = ["."]  # list of folders that contain the packages (["."] by default)
 namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: Fast unit tests (no ML model training)",
+    "integration: Integration tests (may train small models)",
+    "e2e: End-to-end tests (full pipeline, slow)",
+    "slow: Tests that take a long time to run",
+]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
