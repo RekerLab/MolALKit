@@ -13,7 +13,7 @@ def molalkit_run(arguments=None):
     if args.load_checkpoint and os.path.exists("%s/al.pkl" % args.save_dir):
         logger.info("Restart active learning from checkpoint file %s/al.pkl" % args.save_dir)
         active_learner = ActiveLearner.load(path=args.save_dir)
-        current_loop = active_learner.current_loop
+        current_iter = active_learner.current_iter
     else:
         logger.info("Start active learning from scratch")
         active_learner = ActiveLearner(
@@ -30,9 +30,9 @@ def molalkit_run(arguments=None):
             kernel=args.kernels[0],
             detail=args.detail,
         )
-        current_loop = 0
+        current_iter = 0
         active_learner.evaluate()
-    for i in range(current_loop, args.max_iter or 100):
+    for i in range(current_iter, args.max_iter or 100):
         logger.info("Active learning loop %d" % i)
         for _ in range(args.n_select):
             active_learner.step_select()
@@ -47,7 +47,7 @@ def molalkit_run(arguments=None):
         if i % args.write_traj_stride == 0:
             active_learner.write_traj()
         if args.save_cpt_stride is not None and i % args.save_cpt_stride == 0:
-            active_learner.current_loop = i + 1
+            active_learner.current_iter = i + 1
             active_learner.save(path=args.save_dir, filename="al_temp.pkl", overwrite=True)
             shutil.move(os.path.join(args.save_dir, "al_temp.pkl"), os.path.join(args.save_dir, "al.pkl"))
             logger.info("Save checkpoint file %s/al.pkl" % args.save_dir)
