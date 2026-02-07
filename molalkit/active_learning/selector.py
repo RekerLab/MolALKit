@@ -252,7 +252,7 @@ class ExploitiveSelector(BaseRandomSelector):
         self.target = target
 
     def __call__(self, model, dataset_pool, **kwargs) -> Tuple[List[int], List[float], List[int]]:
-        y_pred = model.predict_value(dataset_pool)
+        y_pred = np.asarray(model.predict_value(dataset_pool)).ravel()
         idx = get_topn_idx(y_pred, n=self.batch_size, target=self.target)
 
         acquisition = y_pred[np.array(idx)].tolist()
@@ -272,7 +272,7 @@ class ClusterExploitiveSelector(BaseClusterSelector):
         self.target = target
 
     def __call__(self, model, dataset_pool, kernel: Callable, **kwargs) -> Tuple[List[int], List[float], List[int]]:
-        y_pred = model.predict_value(dataset_pool)
+        y_pred = np.asarray(model.predict_value(dataset_pool)).ravel()
         idx_cluster = get_topn_idx(y_pred, n=self.cluster_size, target=self.target)
         idx = np.array(idx_cluster)[np.array(self.get_idx_cluster(dataset_pool, kernel, idx_cluster))].tolist()
 
@@ -297,7 +297,7 @@ class PartialQueryExploitiveSelector(BasePartialQuerySelector, BaseRandomSelecto
 
     def __call__(self, model, dataset_pool, **kwargs) -> Tuple[List[int], List[float], List[int]]:
         data_query, idx_query = self.get_partial_data(dataset_pool, self.query_size)
-        y_pred = model.predict_value(data_query)
+        y_pred = np.asarray(model.predict_value(data_query)).ravel()
         idx_ = get_topn_idx(y_pred, n=self.batch_size, target=self.target)
         idx = idx_query[np.array(idx_)].tolist()
 
@@ -321,7 +321,7 @@ class PartialQueryClusterExploitiveSelector(BaseClusterSelector, BasePartialQuer
     
     def __call__(self, model, dataset_pool, kernel: Callable, **kwargs) -> Tuple[List[int], List[float], List[int]]:
         data_query, idx_query = self.get_partial_data(dataset_pool, self.query_size)
-        y_pred = model.predict_value(data_query)
+        y_pred = np.asarray(model.predict_value(data_query)).ravel()
         idx_cluster = get_topn_idx(y_pred, n=self.cluster_size, target=self.target)
         idx_ = np.array(idx_cluster)[np.array(self.get_idx_cluster(dataset_pool, kernel, idx_cluster))].tolist()
         idx = np.array(idx_query)[np.array(idx_)].tolist()

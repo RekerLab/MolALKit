@@ -35,7 +35,7 @@ def get_data(data_format: Literal["mgktools", "chemprop", "graphgps"],
                            features_generator=features_generators,
                            n_jobs=n_jobs)
     elif data_format == "graphgps":
-        from molalkit.models.graphgps.data import get_data
+        from graphgps.data.data_molalkit import get_data
         dataset = get_data(path=path, save_dir=save_dir,
                            smiles_columns=smiles_columns,
                            targets_columns=targets_columns,

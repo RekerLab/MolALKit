@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 from typing import List, Dict, Optional, Callable
 import numpy as np
 import pandas as pd
 from mgktools.features_mol.features_generators import FeaturesGenerator
 from molalkit.models.utils import get_kernel, get_model
+from molalkit.models.configs import MODEL_DIR
 
 
 def get_features_generators_from_config(model_config: Dict) -> Optional[List[List[FeaturesGenerator]]]:
@@ -31,6 +33,18 @@ def get_kernel_from_config(model_config: Dict, dataset, kernel_pkl_path) -> Call
         dataset=dataset,
         kernel_pkl_path=kernel_pkl_path,
     )
+
+
+def _resolve_cfg_path(cfg):
+    """Resolve a YAML config path, checking MODEL_DIR if not found directly."""
+    if cfg is None:
+        return None
+    if os.path.exists(cfg):
+        return cfg
+    resolved = os.path.join(MODEL_DIR, cfg)
+    if os.path.exists(resolved):
+        return resolved
+    return cfg
 
 
 def get_model_from_config(model_config: Dict, dataset, task_type, save_dir,
@@ -102,7 +116,7 @@ def get_model_from_config(model_config: Dict, dataset, task_type, save_dir,
         uncertainty_dropout_p=model_config.get("uncertainty_dropout_p") or 0.1,
         dropout_sampling_size=model_config.get("dropout_sampling_size") or 10,
         continuous_fit=model_config.get("continuous_fit") or False,
-        cfg_path=model_config.get("cfg"),
+        cfg_path=_resolve_cfg_path(model_config.get("cfg")),
         pretrained_path=model_config.get("pretrained_path"),
         n_head=model_config.get("n_head") or 12,
         n_layer=model_config.get("n_layer") or 12,

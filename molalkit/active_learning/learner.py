@@ -196,7 +196,7 @@ class ActiveLearner:
         if self.metrics is not None:
             for i, model in enumerate(self.models):
                 model.fit_molalkit(self.datasets_train[i])
-                y_pred = model.predict_value(self.datasets_val[i])
+                y_pred = np.asarray(model.predict_value(self.datasets_val[i])).ravel()
                 y_pred = [data.targets[0] if data.uidx in alr.uidx_after else y_pred[i] for i, data in enumerate(self.datasets_val[i])]
                 if self.detail:
                     df = pd.DataFrame({"true": self.datasets_val[i].y.ravel(), "pred": y_pred})

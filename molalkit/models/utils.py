@@ -177,7 +177,7 @@ def get_model(data_format: Literal["mgktools", "chemprop", "graphgps"],
                        ffn_num_layers=ffn_num_layers,
                        batch_size=batch_size)
         elif model == "MolFormer":
-            from molalkit.models.molformer.molformer import MolFormer
+            from molformer.molformer import MolFormer
             return MolFormer(save_dir=save_dir, task_type=task_type, pretrained_path=pretrained_path,
                              num_tasks=len(target_columns),
                              n_head=n_head, n_layer=n_layer, n_embd=n_embd, d_dropout=d_dropout,
@@ -187,7 +187,7 @@ def get_model(data_format: Literal["mgktools", "chemprop", "graphgps"],
         else:
             raise ValueError(f"unknown model: {model}")
     elif data_format == "chemprop":
-        from molalkit.models.mpnn.mpnn import MPNN
+        from chemprop.models.mpnn import MPNN
         return MPNN(save_dir=save_dir,
                     data_path=data_path,
                     smiles_columns=smiles_columns,
@@ -233,7 +233,7 @@ def get_model(data_format: Literal["mgktools", "chemprop", "graphgps"],
                     continuous_fit=continuous_fit,
                     logger=logger or EmptyLogger())
     elif data_format == "graphgps":
-        from molalkit.models.graphgps.graphgps import GraphGPS
+        from graphgps.optuna.graphgps import GraphGPS
         return GraphGPS(save_dir=save_dir,
                         cfg_path=cfg_path,
                         ensemble_size=ensemble_size,
