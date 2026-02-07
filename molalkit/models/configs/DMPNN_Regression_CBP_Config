@@ -1,0 +1,20 @@
+{
+    "data_format": "chemprop",
+    "loss_function": "mse",
+    "epochs": 50,
+    "depth": 3,
+    "hidden_size": 300,
+    "ffn_num_layers": 2,
+    "ffn_hidden_size": 300,
+    "dropout": 0.0,
+    "batch_size": 50,
+    "ensemble_size": 1,
+    "continuous_fit": true,
+    "weight_decay": 0.0,
+    "const_lr": true,
+    "cbp": true,
+    "replacement_rate": 0.00001,
+    "maturity_threshold": 100,
+    "reinit_weights": "xavier",
+    "decay_rate": 0.99
+}

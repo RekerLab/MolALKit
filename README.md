@@ -5,24 +5,26 @@ This software package serves as a robust toolkit designed for the active learnin
 ## Installation
 Check the GPU and CUDA requirements at [mgktools](https://github.com/Xiangyan93/mgktools) for marginalized graph kernel model. Non-CUDA installation is not supported.
 
-Python 3.12 is recommended.
+Python 3.12, CUDA12.4, and GCC11.2 are recommended.
 ### Minimum installation
 ```
-pip install git+https://gitlab.com/Xiangyan93/graphdot.git@feature/xy molalkit
+pip install git+https://gitlab.com/Xiangyan93/graphdot.git@v0.8.2 molalkit
 ```
 ### Support Chemprop
 ```
-pip install git+https://github.com/Xiangyan93/chemprop4molalkit.git
+pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+pip install git+https://github.com/Xiangyan93/chemprop4molalkit.git@v0.0.0
 ```
 ### Support GraphGPS
 ```
-pip install torch-scatter torch-sparse torch-geometric pytorch-lightning yacs torchmetrics performer-pytorch ogb git+https://github.com/Xiangyan93/graphgps4molalkit.git
+pip install torch-scatter torch-sparse torch-geometric pytorch-lightning yacs torchmetrics performer-pytorch ogb git+https://github.com/Xiangyan93/graphgps4molalkit.git@v0.0.0 -f https://data.pyg.org/whl/torch-2.6.0+cu124.html
 ```
 ### Support MolFormer
 ```
-pip install transformers pytorch-fast-transformers
+pip install transformers pytorch-fast-transformers git+https://github.com/Xiangyan93/molformer4molalkit.git@v0.0.0
+APEX_CPP_EXT=1 APEX_CUDA_EXT=1 pip install -v --no-build-isolation git+https://github.com/NVIDIA/apex.git
 ```
-Then install https://github.com/NVIDIA/apex, and Download pretrained model at https://github.com/IBM/molformer.
+Then download pretrained model at https://github.com/IBM/molformer.
 
 ## QuickStart
 GPU is required to support graph kernel. 

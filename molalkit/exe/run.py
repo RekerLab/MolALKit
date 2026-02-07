@@ -1,10 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import gc
+import torch
+torch.cuda.is_available()
 import os
 import shutil
 import pandas as pd
 from molalkit.active_learning.learner import ActiveLearner
 from molalkit.exe.args import LearningArgs
+
+
+def _free_init_memory(args):
+    """Free memory from data loading caches and redundant dataset references."""
+    from chemprop.data.data import (
+        empty_cache, set_cache_graph, set_cache_mol, set_cache_features
+    )
+    empty_cache()
+    set_cache_graph(False)
+    set_cache_mol(False)
+    set_cache_features(False)
+    for attr in ("_datasets_full", "_datasets_empty"):
+        if hasattr(args, attr):
+            delattr(args, attr)
+    gc.collect()
 
 
 def molalkit_run(arguments=None):
@@ -32,6 +50,7 @@ def molalkit_run(arguments=None):
         )
         current_iter = 0
         active_learner.evaluate()
+    _free_init_memory(args)
     for i in range(current_iter, args.max_iter or 100):
         logger.info("Active learning loop %d" % i)
         for _ in range(args.n_select):
