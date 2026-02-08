@@ -14,6 +14,7 @@ class GPRegressor(GPR, BaseModel):
     def fit_molalkit(self, train_data, **kwargs):
         X = train_data.X
         y = train_data.y
+        kwargs.pop("iteration", None)
         super().fit(X, y, **kwargs)
 
     def predict_uncertainty(self, pred_data):
