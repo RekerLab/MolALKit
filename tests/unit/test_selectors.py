@@ -131,6 +131,114 @@ class TestExplorativeSelector:
         assert "batch_size=5" in selector.info
 
 
+class _FixedUncertaintyModel:
+    """Model that returns fixed uncertainty values for deterministic testing."""
+
+    def __init__(self, uncertainties):
+        self._uncertainties = np.array(uncertainties)
+
+    def predict_uncertainty(self, data):
+        return self._uncertainties[:len(data)]
+
+
+class TestExplorativeThresholdSelector:
+    """Tests for ExplorativeSelector with target (threshold-based selection)."""
+
+    @pytest.mark.unit
+    def test_target_selects_lowest_above_cutoff(self):
+        """When target is set, select the point with lowest uncertainty above the cutoff."""
+        uncertainties = [0.1, 0.3, 0.6, 0.8, 0.9]
+        model = _FixedUncertaintyModel(uncertainties)
+        dataset = type("D", (), {"__len__": lambda self: 5})()
+
+        selector = ExplorativeSelector(batch_size=1, seed=42, target=0.5)
+        idx, acquisition, remain = selector(model=model, dataset_pool=dataset)
+
+        assert len(idx) == 1
+        assert idx[0] == 2  # uncertainty 0.6 is the lowest above 0.5
+        assert acquisition[0] == pytest.approx(0.6)
+
+    @pytest.mark.unit
+    def test_target_selects_multiple_lowest_above_cutoff(self):
+        """When batch_size > 1, select the N lowest uncertainties above cutoff."""
+        uncertainties = [0.1, 0.3, 0.6, 0.8, 0.9]
+        model = _FixedUncertaintyModel(uncertainties)
+        dataset = type("D", (), {"__len__": lambda self: 5})()
+
+        selector = ExplorativeSelector(batch_size=2, seed=42, target=0.5)
+        idx, acquisition, remain = selector(model=model, dataset_pool=dataset)
+
+        assert len(idx) == 2
+        assert set(idx) == {2, 3}  # uncertainties 0.6 and 0.8
+
+    @pytest.mark.unit
+    def test_target_fallback_when_none_above_cutoff(self):
+        """When no points exceed cutoff, fall back to max uncertainty selection."""
+        uncertainties = [0.1, 0.2, 0.3, 0.4, 0.5]
+        model = _FixedUncertaintyModel(uncertainties)
+        dataset = type("D", (), {"__len__": lambda self: 5})()
+
+        selector = ExplorativeSelector(batch_size=1, seed=42, target=0.9)
+        idx, acquisition, remain = selector(model=model, dataset_pool=dataset)
+
+        assert len(idx) == 1
+        assert idx[0] == 4  # highest uncertainty (0.5) is selected as fallback
+
+    @pytest.mark.unit
+    def test_target_none_preserves_original_behavior(self, mock_dataset_small, mock_model):
+        """When target is None, behavior is identical to standard ExplorativeSelector."""
+        mock_model.fit_molalkit(mock_dataset_small)
+
+        selector_default = ExplorativeSelector(batch_size=5, seed=42, target=None)
+        selector_original = ExplorativeSelector(batch_size=5, seed=42)
+
+        np.random.seed(100)
+        idx1, acq1, _ = selector_default(model=mock_model, dataset_pool=mock_dataset_small)
+        np.random.seed(100)
+        idx2, acq2, _ = selector_original(model=mock_model, dataset_pool=mock_dataset_small)
+
+        assert idx1 == idx2
+        assert acq1 == acq2
+
+    @pytest.mark.unit
+    def test_target_batch_larger_than_above_cutoff_count(self):
+        """When batch_size exceeds number of points above cutoff, select all above cutoff."""
+        uncertainties = [0.1, 0.3, 0.6, 0.8, 0.9]
+        model = _FixedUncertaintyModel(uncertainties)
+        dataset = type("D", (), {"__len__": lambda self: 5})()
+
+        selector = ExplorativeSelector(batch_size=5, seed=42, target=0.5)
+        idx, acquisition, remain = selector(model=model, dataset_pool=dataset)
+
+        assert set(idx) == {2, 3, 4}  # only 3 points above 0.5
+
+    @pytest.mark.unit
+    def test_no_overlap_with_target(self):
+        """Selected and remaining indices should not overlap when target is set."""
+        uncertainties = [0.1, 0.3, 0.6, 0.8, 0.9]
+        model = _FixedUncertaintyModel(uncertainties)
+        dataset = type("D", (), {"__len__": lambda self: 5})()
+
+        selector = ExplorativeSelector(batch_size=2, seed=42, target=0.5)
+        idx, _, remain = selector(model=model, dataset_pool=dataset)
+
+        assert set(idx).isdisjoint(set(remain))
+        assert len(idx) + len(remain) == 5
+
+    @pytest.mark.unit
+    def test_info_property_with_target(self):
+        """Test info property includes target when set."""
+        selector = ExplorativeSelector(batch_size=5, seed=42, target=0.5)
+        assert "ExplorativeSelector" in selector.info
+        assert "target=0.5" in selector.info
+
+    @pytest.mark.unit
+    def test_info_property_without_target(self):
+        """Test info property omits target when None."""
+        selector = ExplorativeSelector(batch_size=5, seed=42)
+        assert "target" not in selector.info
+
+
 class TestExploitiveSelector:
     """Tests for ExploitiveSelector (prediction-based selection)."""
 

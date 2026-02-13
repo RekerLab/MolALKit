@@ -13,11 +13,22 @@ from mgktools.data.split import data_split_index
 from mgktools.evaluators.metric import Metric
 from mgktools.features_mol.features_generators import FeaturesGenerator
 from molalkit.active_learning.selector import (
-    RandomSelector, ClusterRandomSelector, 
+    RandomSelector, ClusterRandomSelector,
     ExplorativeSelector, ClusterExplorativeSelector,
     PartialQueryExplorativeSelector, PartialQueryClusterExplorativeSelector,
     ExploitiveSelector, ClusterExploitiveSelector,
     PartialQueryExploitiveSelector, PartialQueryClusterExploitiveSelector,
+    UpperConfidenceBoundSelector, DensityWeightedUncertaintySelector,
+    AdaptiveExplorativeSelector, ExpectedImprovementSelector,
+    DensityWeightedGammaSelector, GreedyVarianceReductionSelector,
+    FacilityLocationSelector, LocalUncertaintySelector,
+    QBCBootstrapSelector,
+    TrainingDistanceDWSelector, InformationDensitySelector,
+    RankBasedDWSelector, SqrtStdDWSelector,
+    AdaptiveGammaDWSelector, DWRepulsionSelector,
+    AOptimalSelector, CoreSetSelector,
+    PercentileDensitySelector, BoltzmannDWSelector,
+    DensityUncertaintyScheduleSelector, CoreSetUncertaintySelector,
 )
 from molalkit.active_learning.forgetter import (
     FirstForgetter, RandomForgetter, 
@@ -413,7 +424,16 @@ class DatasetModelArgs(DatasetArgs, ModelArgs):
 
 
 class SelectorArgs(Tap):
-    select_method: Literal["random", "explorative", "exploitive"] = None
+    select_method: Literal["random", "explorative", "exploitive",
+                           "ucb", "density_weighted", "adaptive", "expected_improvement",
+                           "density_weighted_gamma", "greedy_variance_reduction",
+                           "facility_location", "local_uncertainty", "qbc_bootstrap",
+                           "training_distance_dw", "information_density",
+                           "rank_based_dw", "sqrt_std_dw",
+                           "adaptive_gamma_dw", "dw_repulsion",
+                           "a_optimal", "core_set", "percentile_density",
+                           "boltzmann_dw", "density_uncertainty_schedule",
+                           "core_set_uncertainty"] = None
     """the method to select the next batch of samples."""
     s_batch_size: int = 1
     """number of samples to select in each iteration."""
@@ -422,10 +442,47 @@ class SelectorArgs(Tap):
     s_cluster_size: int = None
     """number of samples in each cluster for cluster batch selection. (default = 20 * batch_size)"""
     s_query_size: int = None
-    """number of samples to query in each active learning iteration. (default=None means query all samples in the 
+    """number of samples to query in each active learning iteration. (default=None means query all samples in the
     pool set)"""
     s_exploitive_target: str = None
     """the target value for exploitive active learning."""
+    s_explorative_target: float = None
+    """the uncertainty cutoff for threshold-based explorative active learning. When set, pool points with uncertainty
+    above this cutoff are filtered, and the one with the lowest uncertainty among them is selected (i.e., the point
+    just barely above the threshold). Falls back to standard highest-uncertainty selection if no points exceed the
+    cutoff."""
+    s_ucb_beta: float = 1.0
+    """beta parameter for UCB selection: score = -|mean| + beta * std."""
+    s_adaptive_alpha_max: float = 1.0
+    """maximum alpha for adaptive explorative selection (exploration weight at start)."""
+    s_adaptive_gamma: float = 1.0
+    """decay exponent for adaptive explorative selection: alpha = alpha_max * (1 - t/T)^gamma."""
+    s_adaptive_total_iter: int = 1000
+    """total iterations for adaptive explorative selection schedule."""
+    s_density_gamma: float = 2.0
+    """gamma exponent for density_weighted_gamma: score = std * density^gamma."""
+    s_local_k_neighbors: int = 10
+    """number of nearest neighbors for local_uncertainty selector."""
+    s_qbc_n_committee: int = 5
+    """number of committee members for qbc_bootstrap selector."""
+    s_adaptive_gamma_max: float = 3.0
+    """maximum gamma for adaptive_gamma_dw: gamma decays from this value."""
+    s_adaptive_gamma_min: float = 0.5
+    """minimum gamma for adaptive_gamma_dw: gamma decays to this value."""
+    s_adaptive_gamma_total_iter: int = 1000
+    """total iterations for adaptive_gamma_dw schedule."""
+    s_repulsion_history: int = 20
+    """number of recently selected points to repel from in dw_repulsion."""
+    s_percentile: float = 75.0
+    """uncertainty percentile threshold for percentile_density selector."""
+    s_boltzmann_tau_max: float = 1.0
+    """maximum temperature for boltzmann_dw selector."""
+    s_boltzmann_tau_min: float = 0.1
+    """minimum temperature for boltzmann_dw selector."""
+    s_boltzmann_total_iter: int = 1000
+    """total iterations for boltzmann_dw temperature schedule."""
+    s_schedule_total_iter: int = 1000
+    """total iterations for density_uncertainty_schedule selector."""
     seed: int = 0
     """random seed."""
 
@@ -459,7 +516,8 @@ class SelectorArgs(Tap):
                                                                          query_size=self.s_query_size,
                                                                          seed=self.seed)
                     else:
-                        self._selector = ExplorativeSelector(batch_size=self.s_batch_size, seed=self.seed)
+                        self._selector = ExplorativeSelector(batch_size=self.s_batch_size, seed=self.seed,
+                                                              target=self.s_explorative_target)
             elif self.select_method == "exploitive":
                 if self.s_batch_mode == "cluster":
                     if self.s_query_size is not None:
@@ -484,6 +542,106 @@ class SelectorArgs(Tap):
                         self._selector = ExploitiveSelector(batch_size=self.s_batch_size, 
                                                             target=self.s_exploitive_target, 
                                                             seed=self.seed)
+            elif self.select_method == "ucb":
+                self._selector = UpperConfidenceBoundSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed,
+                    beta=self.s_ucb_beta)
+            elif self.select_method == "density_weighted":
+                self._selector = DensityWeightedUncertaintySelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
+            elif self.select_method == "adaptive":
+                self._selector = AdaptiveExplorativeSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed,
+                    alpha_max=self.s_adaptive_alpha_max,
+                    gamma=self.s_adaptive_gamma,
+                    total_iter=self.s_adaptive_total_iter)
+            elif self.select_method == "expected_improvement":
+                self._selector = ExpectedImprovementSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
+            elif self.select_method == "density_weighted_gamma":
+                self._selector = DensityWeightedGammaSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed,
+                    gamma=self.s_density_gamma)
+            elif self.select_method == "greedy_variance_reduction":
+                self._selector = GreedyVarianceReductionSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
+            elif self.select_method == "facility_location":
+                self._selector = FacilityLocationSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
+            elif self.select_method == "local_uncertainty":
+                self._selector = LocalUncertaintySelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed,
+                    k_neighbors=self.s_local_k_neighbors)
+            elif self.select_method == "qbc_bootstrap":
+                self._selector = QBCBootstrapSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed,
+                    n_committee=self.s_qbc_n_committee)
+            elif self.select_method == "training_distance_dw":
+                self._selector = TrainingDistanceDWSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
+            elif self.select_method == "information_density":
+                self._selector = InformationDensitySelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
+            elif self.select_method == "rank_based_dw":
+                self._selector = RankBasedDWSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
+            elif self.select_method == "sqrt_std_dw":
+                self._selector = SqrtStdDWSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
+            elif self.select_method == "adaptive_gamma_dw":
+                self._selector = AdaptiveGammaDWSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed,
+                    gamma_max=self.s_adaptive_gamma_max,
+                    gamma_min=self.s_adaptive_gamma_min,
+                    total_iter=self.s_adaptive_gamma_total_iter)
+            elif self.select_method == "dw_repulsion":
+                self._selector = DWRepulsionSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed,
+                    history_size=self.s_repulsion_history)
+            elif self.select_method == "a_optimal":
+                self._selector = AOptimalSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
+            elif self.select_method == "core_set":
+                self._selector = CoreSetSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
+            elif self.select_method == "percentile_density":
+                self._selector = PercentileDensitySelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed,
+                    percentile=self.s_percentile)
+            elif self.select_method == "boltzmann_dw":
+                self._selector = BoltzmannDWSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed,
+                    tau_max=self.s_boltzmann_tau_max,
+                    tau_min=self.s_boltzmann_tau_min,
+                    total_iter=self.s_boltzmann_total_iter)
+            elif self.select_method == "density_uncertainty_schedule":
+                self._selector = DensityUncertaintyScheduleSelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed,
+                    total_iter=self.s_schedule_total_iter)
+            elif self.select_method == "core_set_uncertainty":
+                self._selector = CoreSetUncertaintySelector(
+                    batch_size=self.s_batch_size,
+                    seed=self.seed)
             elif self.select_method is None:
                 return None
             else:

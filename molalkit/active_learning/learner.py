@@ -141,9 +141,11 @@ class ActiveLearner:
             self.models[0].fit_molalkit(self.datasets_train[0], iteration=self.current_iter)
         selected_idx, acquisition, remain_idx = self.selector(model=self.models[0],
                                                               dataset_pool=self.datasets_pool[0],
+                                                              dataset_train=self.datasets_train[0],
                                                               kernel=self.kernel,
                                                               stop_cutoff=stop_cutoff,
-                                                              confidence_cutoff=confidence_cutoff)
+                                                              confidence_cutoff=confidence_cutoff,
+                                                              current_iter=self.current_iter)
         alr.uidx_select = [self.datasets_pool[0].data[idx].uidx for idx in selected_idx]
         alr.acquisition_select = acquisition
         # transfer data from pool to train.
