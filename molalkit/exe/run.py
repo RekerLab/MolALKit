@@ -12,13 +12,16 @@ from molalkit.exe.args import LearningArgs
 
 def _free_init_memory(args):
     """Free memory from data loading caches and redundant dataset references."""
-    from chemprop.data.data import (
-        empty_cache, set_cache_graph, set_cache_mol, set_cache_features
-    )
-    empty_cache()
-    set_cache_graph(False)
-    set_cache_mol(False)
-    set_cache_features(False)
+    try:
+        from chemprop.data.data import (
+            empty_cache, set_cache_graph, set_cache_mol, set_cache_features
+        )
+        empty_cache()
+        set_cache_graph(False)
+        set_cache_mol(False)
+        set_cache_features(False)
+    except ImportError:
+        pass
     for attr in ("_datasets_full", "_datasets_empty"):
         if hasattr(args, attr):
             delattr(args, attr)
