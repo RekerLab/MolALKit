@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "molalkit"
 description = "MolALKit: A Toolkit for Active Learning in Molecular Data."
-version = "1.0.1"
+version = "1.1.0"
 authors = [
     {name = "Yan Xiang", email="yan.xiang@duke.edu"}
 ]
