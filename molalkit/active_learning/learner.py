@@ -184,6 +184,10 @@ class ActiveLearner:
         self.current_iter += 1
         self.active_learning_traj.results.append(alr)
 
+    def set_pool(self, datasets_pool):
+        """Replace the current pool datasets with new ones (for sequential-pool AL)."""
+        self.datasets_pool = datasets_pool
+
     def evaluate(self):
         if len(self.active_learning_traj.results) == 0:
             alr = ActiveLearningResult(self.current_iter - 1)

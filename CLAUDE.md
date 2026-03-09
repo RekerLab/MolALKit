@@ -78,6 +78,31 @@ pytest tests/test_learning.py
 2. Main loop: select samples → forget samples → evaluate (periodic) → save checkpoints
 3. Output: `al_traj.csv` (metrics trajectory), final train/pool datasets
 
+### Sequential-Pool Active Learning (`dev/sp` branch)
+
+Splits the pool into equal-sized subsets and runs AL on each subset sequentially. Early stopping per subset prevents selecting redundant data: when the uncertainty of the selected sample drops below a threshold, AL moves to the next subset.
+
+**CLI arguments:**
+- `--n_pool_subsets N` — Number of equal-sized subsets to split the pool into (requires explorative selection)
+- `--sp_uncertainty_cutoff FLOAT` — Uncertainty threshold; when the selected sample's uncertainty falls below this, stop on current subset
+- `--max_iter N` — In sequential-pool mode, this is the max iterations *per subset*
+
+**Implementation files:**
+- `molalkit/exe/run.py` — `_split_pool_uidx()`, `_build_pool_datasets()`, `_should_stop_early()`, `_run_al_loop()` helper functions; main loop iterates over subsets
+- `molalkit/active_learning/learner.py` — `ActiveLearner.set_pool()` method for swapping pool at runtime
+
+**Example:**
+```bash
+molalkit_run --data_public bace --metrics roc_auc \
+  --model_configs RandomForest_Morgan_Config \
+  --split_type random --split_sizes 0.5 0.5 \
+  --select_method explorative --s_batch_size 1 \
+  --n_pool_subsets 4 --sp_uncertainty_cutoff 0.35 \
+  --max_iter 500 --evaluate_stride 10 --seed 0 --save_dir ./results
+```
+
+Works with yoked learning (multiple `--model_configs`), `--full_val`, and precomputed graph kernels.
+
 ### Key Patterns
 
 - Factory functions: `get_model()`, `get_kernel()` for model instantiation

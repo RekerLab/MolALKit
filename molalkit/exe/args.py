@@ -562,6 +562,13 @@ class LearningArgs(DatasetModelArgs, SelectorArgs, ForgetterArgs, EvaluationArgs
     """write trajectory file every no. steps of select-forget loops."""
     load_checkpoint: bool = False
     """load checkpoint file and continue the active learning."""
+    n_pool_subsets: int = None
+    """number of equal-sized subsets to split the pool into for sequential-pool active learning.
+    If None, standard (static-pool) active learning is used."""
+    sp_uncertainty_cutoff: float = None
+    """uncertainty threshold for early stopping in sequential-pool active learning.
+    When the uncertainty of the latest selected sample falls below this threshold,
+    AL stops on the current pool subset and moves to the next."""
 
     @property
     def top_uidx(self) -> Optional[List[int]]:
@@ -599,7 +606,16 @@ class LearningArgs(DatasetModelArgs, SelectorArgs, ForgetterArgs, EvaluationArgs
         if self.forget_method is not None:
             assert self.n_forget > 0, "n_forget must be greater than 0."
 
-        if self.max_iter is None:
+        # Validate sequential-pool arguments
+        if self.n_pool_subsets is not None:
+            assert self.n_pool_subsets >= 2, "n_pool_subsets must be >= 2."
+            assert self.select_method == "explorative", \
+                "sequential-pool active learning currently only supports explorative selection."
+            assert self.sp_uncertainty_cutoff is not None, \
+                "sp_uncertainty_cutoff must be set for sequential-pool active learning."
+            assert self.sp_uncertainty_cutoff > 0, "sp_uncertainty_cutoff must be positive."
+
+        if self.max_iter is None and self.n_pool_subsets is None:
             dn = self.n_select - self.n_forget
             if dn > 0:
                 self.max_iter = len(self.datasets_pool[0]) // dn
