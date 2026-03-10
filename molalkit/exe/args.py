@@ -173,6 +173,11 @@ class DatasetArgs(CommonArgs):
             self.smiles_columns = ["smiles"]
             self.targets_columns = ["HIV_active"]
             self.task_type = "binary"
+        elif self.data_public in ["MDR1_MDCK_classification2", "PAMPA_NCATS"]:
+            self.data_path = os.path.join(DATA_DIR, "%s.csv" % self.data_public)
+            self.smiles_columns = ["SMILES"]
+            self.targets_columns = ["Y"]
+            self.task_type = "binary"
         elif self.data_public in ["ames", "carcinogens_lagunin", "dili", "herg", "skin", "hia_hou", "pgp_broccatelli",
                                   "bioavailability_ma", "clintox", "bbb_martins", "CYP1A2_Veith",
                                   "CYP2C9_Substrate_CarbonMangels", "CYP2C9_Veith", "CYP2C19_Veith",
