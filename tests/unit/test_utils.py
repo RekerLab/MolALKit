@@ -5,7 +5,9 @@ Unit tests for utility functions.
 """
 import pytest
 import numpy as np
+import pandas as pd
 from molalkit.active_learning.utils import random_choice, get_topn_idx
+from molalkit.exe.utils import add_error_rate_to_labels, apply_error_rate_to_id2datapoint
 
 
 class TestRandomChoice:
@@ -177,3 +179,42 @@ class TestGetTopnIdx:
 
         assert len(idx) == 1
         assert idx[0] == 1  # Index of max value (5.0)
+
+
+class TestLabelCorruption:
+    """Tests for label corruption utilities."""
+
+    @pytest.mark.unit
+    def test_flip_error_algorithm_inverts_selected_binary_labels(self):
+        """Test that flip preserves the legacy binary label inversion behavior."""
+        np.random.seed(42)
+        df = pd.DataFrame({"uidx": range(4), "target": [0, 1, 0, 1]})
+
+        add_error_rate_to_labels(df, 1.0, "target", error_algorithm="flip")
+
+        assert df["target"].tolist() == [1, 0, 1, 0]
+        assert df["flip_label"].tolist() == [True, True, True, True]
+
+    @pytest.mark.unit
+    def test_stratified_shuffle_preserves_class_counts(self):
+        """Test that stratified label shuffling preserves the class imbalance."""
+        np.random.seed(42)
+        labels = [0] * 80 + [1] * 20
+        df = pd.DataFrame({"uidx": range(100), "target": labels})
+
+        add_error_rate_to_labels(df, 0.25, "target", error_algorithm="stratified_shuffle")
+        corrupted_df = df[df["flip_label"]]
+
+        assert len(corrupted_df) == 25
+        assert corrupted_df["target"].value_counts().to_dict() == {0: 20, 1: 5}
+        assert df["target"].value_counts().to_dict() == {0: 80, 1: 20}
+
+    @pytest.mark.unit
+    def test_apply_error_rate_allows_corrupted_label_to_remain_same(self):
+        """Test datapoint updates for relabeling algorithms where labels may not change."""
+        df = pd.DataFrame({"uidx": [0], "target": [1], "flip_label": [True]})
+        datapoint = type("MockDataPoint", (), {"targets": [1]})()
+
+        apply_error_rate_to_id2datapoint({0: datapoint}, df, "target")
+
+        assert datapoint.targets[0] == 1

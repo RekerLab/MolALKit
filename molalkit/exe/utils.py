@@ -138,11 +138,44 @@ def read_df(path, task_type, target_columns) -> pd.DataFrame:
     return df
 
 
-def add_error_rate_to_labels(df, error_rate, target_column):
-    """ Randomly flip the labels of a portion of the data."""
-    error_index = np.random.choice(df.index, int(error_rate * len(df)), replace=False)
+def _stratified_error_index(df, error_rate, target_column):
+    """Select an error subset with class proportions close to the input data."""
+    n_error = int(error_rate * len(df))
+    if n_error == 0:
+        return []
+
+    label_counts = df[target_column].value_counts().sort_index()
+    expected_counts = label_counts * n_error / len(df)
+    selected_counts = expected_counts.astype(int)
+    n_remaining = n_error - selected_counts.sum()
+    if n_remaining > 0:
+        remainders = (expected_counts - selected_counts).sort_values(ascending=False)
+        for label in remainders.index[:n_remaining]:
+            selected_counts.loc[label] += 1
+
+    error_index = []
+    for label, n_select in selected_counts.items():
+        if n_select > 0:
+            label_index = df[df[target_column] == label].index
+            error_index.extend(np.random.choice(label_index, n_select, replace=False))
+    return error_index
+
+
+def add_error_rate_to_labels(df, error_rate, target_column, error_algorithm="flip"):
+    """Apply label corruption to a portion of binary classification labels."""
+    if error_algorithm == "flip":
+        error_index = np.random.choice(df.index, int(error_rate * len(df)), replace=False)
+    elif error_algorithm == "stratified_shuffle":
+        error_index = _stratified_error_index(df, error_rate, target_column)
+    else:
+        raise ValueError(f"Unknown error algorithm {error_algorithm}")
+
     df["flip_label"] = False
-    df.loc[error_index, target_column] ^= 1
+    if error_algorithm == "flip":
+        df.loc[error_index, target_column] ^= 1
+    else:
+        shuffled_labels = np.random.permutation(df.loc[error_index, target_column].to_numpy())
+        df.loc[error_index, target_column] = shuffled_labels
     df.loc[error_index, "flip_label"] = True
 
 
@@ -150,7 +183,7 @@ def apply_error_rate_to_id2datapoint(id2datapoint, df, target_column):
     assert "flip_label" in df.columns, "Error rate has not been applied to the dataframe."
     for i, row in df.iterrows():
         if row["flip_label"]:
-            assert set([id2datapoint[row["uidx"]].targets[0], row[target_column]]) == {0, 1}
+            assert row[target_column] in {0, 1}
             id2datapoint[row["uidx"]].targets[0] = row[target_column]
         else:
             assert id2datapoint[row["uidx"]].targets[0] == row[target_column]

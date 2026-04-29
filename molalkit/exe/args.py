@@ -99,6 +99,8 @@ class DatasetArgs(CommonArgs):
     """number of samples as the initial."""
     error_rate: float = None
     """the percent of the training set that will be affected by error (0-1), valid only for binary classification."""
+    error_algorithm: Literal["flip", "stratified_shuffle"] = "flip"
+    """the algorithm used to corrupt labels when error_rate is set."""
 
     def get_train_pool_split_index(self, df_al: pd.DataFrame) -> Tuple[List[int], List[int]]:
         if self.init_size >= len(df_al):
@@ -220,6 +222,8 @@ class DatasetArgs(CommonArgs):
             assert len(self.smiles_columns) == 1, f"Scaffold split is valid only for single SMILES column, but {len(self.smiles_columns)} are provided."
 
         assert len(self.targets_columns) == 1, "multi-task active learning is not implemented yet."
+        if self.error_rate is not None:
+            assert self.task_type == "binary", "error_rate is valid only for binary classification."
 
         if self.data_path is not None:
             # All data comes from the same file.
@@ -247,9 +251,8 @@ class DatasetArgs(CommonArgs):
                 df[df.index.isin(val_index)].to_csv("%s/val.csv" % self.save_dir, index=False)
                 df_al = df[df.index.isin(al_index)].copy()
                 if self.error_rate is not None:
-                    assert self.task_type == "binary", "error_rate is valid only for binary classification."
                     # randomly select a portion of the training set to be affected by error
-                    add_error_rate_to_labels(df_al, self.error_rate, self.targets_columns[0])
+                    add_error_rate_to_labels(df_al, self.error_rate, self.targets_columns[0], self.error_algorithm)
             # split the active learning set into training and pool sets
             train_index, pool_index = self.get_train_pool_split_index(df_al)
             df_al.iloc[train_index].to_csv("%s/train_init.csv" % self.save_dir, index=False)
@@ -288,8 +291,8 @@ class DatasetArgs(CommonArgs):
                 df_val["uidx"] = range(len(df_val))
                 df_val["uidx"] += len(df_train) + len(df_pool)
                 if self.error_rate is not None:
-                    add_error_rate_to_labels(df_train, self.error_rate, self.targets_columns[0])
-                    add_error_rate_to_labels(df_pool, self.error_rate, self.targets_columns[0])
+                    add_error_rate_to_labels(df_train, self.error_rate, self.targets_columns[0], self.error_algorithm)
+                    add_error_rate_to_labels(df_pool, self.error_rate, self.targets_columns[0], self.error_algorithm)
                 df_train.to_csv("%s/train_init.csv" % self.save_dir, index=False)
                 df_pool.to_csv("%s/pool_init.csv" % self.save_dir, index=False)
                 df_val.to_csv("%s/val.csv" % self.save_dir, index=False)

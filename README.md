@@ -21,7 +21,7 @@ pip install torch-scatter torch-sparse torch-geometric pytorch-lightning yacs to
 ```
 ### Support MolFormer
 ```
-pip install transformers pytorch-fast-transformers git+https://github.com/Xiangyan93/molformer4molalkit.git@v0.0.0
+pip install transformers pytorch-fast-transformers git+https://github.com/Xiangyan93/molformer4molalkit.git@v0.0.1
 APEX_CPP_EXT=1 APEX_CUDA_EXT=1 pip install -v --no-build-isolation git+https://github.com/NVIDIA/apex.git
 ```
 Then download pretrained model at https://github.com/IBM/molformer.
