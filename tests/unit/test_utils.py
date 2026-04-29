@@ -210,6 +210,23 @@ class TestLabelCorruption:
         assert df["target"].value_counts().to_dict() == {0: 80, 1: 20}
 
     @pytest.mark.unit
+    def test_stratified_shuffle_zero_error_rate_corrupts_nothing(self):
+        """Test that zero error rate produces no corrupted labels."""
+        df = pd.DataFrame({"uidx": range(10), "target": [0] * 5 + [1] * 5})
+
+        add_error_rate_to_labels(df, 0.0, "target", error_algorithm="stratified_shuffle")
+
+        assert df["flip_label"].sum() == 0
+
+    @pytest.mark.unit
+    def test_unknown_error_algorithm_raises(self):
+        """Test that an unrecognized algorithm raises ValueError."""
+        df = pd.DataFrame({"uidx": range(4), "target": [0, 1, 0, 1]})
+
+        with pytest.raises(ValueError, match="Unknown error algorithm"):
+            add_error_rate_to_labels(df, 0.5, "target", error_algorithm="nonexistent")
+
+    @pytest.mark.unit
     def test_apply_error_rate_allows_corrupted_label_to_remain_same(self):
         """Test datapoint updates for relabeling algorithms where labels may not change."""
         df = pd.DataFrame({"uidx": [0], "target": [1], "flip_label": [True]})

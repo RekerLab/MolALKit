@@ -251,7 +251,6 @@ class DatasetArgs(CommonArgs):
                 df[df.index.isin(val_index)].to_csv("%s/val.csv" % self.save_dir, index=False)
                 df_al = df[df.index.isin(al_index)].copy()
                 if self.error_rate is not None:
-                    # randomly select a portion of the training set to be affected by error
                     add_error_rate_to_labels(df_al, self.error_rate, self.targets_columns[0], self.error_algorithm)
             # split the active learning set into training and pool sets
             train_index, pool_index = self.get_train_pool_split_index(df_al)

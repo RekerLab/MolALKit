@@ -163,19 +163,16 @@ def _stratified_error_index(df, error_rate, target_column):
 
 def add_error_rate_to_labels(df, error_rate, target_column, error_algorithm="flip"):
     """Apply label corruption to a portion of binary classification labels."""
-    if error_algorithm == "flip":
-        error_index = np.random.choice(df.index, int(error_rate * len(df)), replace=False)
-    elif error_algorithm == "stratified_shuffle":
-        error_index = _stratified_error_index(df, error_rate, target_column)
-    else:
-        raise ValueError(f"Unknown error algorithm {error_algorithm}")
-
     df["flip_label"] = False
     if error_algorithm == "flip":
+        error_index = np.random.choice(df.index, int(error_rate * len(df)), replace=False)
         df.loc[error_index, target_column] ^= 1
-    else:
+    elif error_algorithm == "stratified_shuffle":
+        error_index = _stratified_error_index(df, error_rate, target_column)
         shuffled_labels = np.random.permutation(df.loc[error_index, target_column].to_numpy())
         df.loc[error_index, target_column] = shuffled_labels
+    else:
+        raise ValueError(f"Unknown error algorithm {error_algorithm}")
     df.loc[error_index, "flip_label"] = True
 
 
@@ -184,6 +181,7 @@ def apply_error_rate_to_id2datapoint(id2datapoint, df, target_column):
     for i, row in df.iterrows():
         if row["flip_label"]:
             assert row[target_column] in {0, 1}
+            assert id2datapoint[row["uidx"]].targets[0] in {0, 1}
             id2datapoint[row["uidx"]].targets[0] = row[target_column]
         else:
             assert id2datapoint[row["uidx"]].targets[0] == row[target_column]
