@@ -238,7 +238,7 @@ class MinLOOErrorForgetter(BaseRandomForgetter):
 
     @property
     def info(self) -> str:
-        return f"MinOOBErrorForgetter(batch_size={self.batch_size})"
+        return f"MinLOOErrorForgetter(batch_size={self.batch_size})"
 
 
 class MaxLOOErrorForgetter(BaseRandomForgetter):
