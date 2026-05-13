@@ -167,13 +167,18 @@ def add_error_rate_to_labels(df, error_rate, target_column, error_algorithm="fli
     if error_algorithm == "flip":
         error_index = np.random.choice(df.index, int(error_rate * len(df)), replace=False)
         df.loc[error_index, target_column] ^= 1
+        df.loc[error_index, "flip_label"] = True
     elif error_algorithm == "stratified_shuffle":
         error_index = _stratified_error_index(df, error_rate, target_column)
-        shuffled_labels = np.random.permutation(df.loc[error_index, target_column].to_numpy())
+        original_labels = df.loc[error_index, target_column].copy()
+        shuffled_labels = np.random.permutation(original_labels.to_numpy())
         df.loc[error_index, target_column] = shuffled_labels
+        changed_index = original_labels.index[
+            df.loc[error_index, target_column].to_numpy() != original_labels.to_numpy()
+        ]
+        df.loc[changed_index, "flip_label"] = True
     else:
         raise ValueError(f"Unknown error algorithm {error_algorithm}")
-    df.loc[error_index, "flip_label"] = True
 
 
 def apply_error_rate_to_id2datapoint(id2datapoint, df, target_column):

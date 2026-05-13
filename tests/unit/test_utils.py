@@ -201,12 +201,14 @@ class TestLabelCorruption:
         np.random.seed(42)
         labels = [0] * 80 + [1] * 20
         df = pd.DataFrame({"uidx": range(100), "target": labels})
+        original_labels = df["target"].copy()
 
         add_error_rate_to_labels(df, 0.25, "target", error_algorithm="stratified_shuffle")
-        corrupted_df = df[df["flip_label"]]
+        changed_labels = df["target"] != original_labels
 
-        assert len(corrupted_df) == 25
-        assert corrupted_df["target"].value_counts().to_dict() == {0: 20, 1: 5}
+        assert df["flip_label"].tolist() == changed_labels.tolist()
+        assert df["flip_label"].sum() == 10
+        assert df[df["flip_label"]]["target"].value_counts().to_dict() == {0: 5, 1: 5}
         assert df["target"].value_counts().to_dict() == {0: 80, 1: 20}
 
     @pytest.mark.unit
