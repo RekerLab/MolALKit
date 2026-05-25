@@ -50,6 +50,18 @@ def _build_pool_datasets(uidx_list, id2datapoints, datasets_pool):
             for ds, id2dp in zip(datasets_pool, id2datapoints)]
 
 
+def _write_dataset_subset_with_current_labels(dataset, source_df, target_columns, output_path):
+    """Write a dataset subset while preserving labels currently stored in memory."""
+    records = []
+    for data in dataset:
+        row = source_df.loc[data.uidx].copy()
+        targets = np.asarray(data.targets).ravel()
+        for column, value in zip(target_columns, targets):
+            row[column] = value
+        records.append(row)
+    pd.DataFrame(records, columns=source_df.columns).to_csv(output_path, index=False)
+
+
 def _should_stop_early(active_learner, uncertainty_cutoff):
     """Check if the latest selected sample's uncertainty is below the threshold.
 
@@ -161,6 +173,16 @@ def molalkit_run(arguments=None):
         # Standard (static-pool) active learning
         _run_al_loop(active_learner, args, current_iter, args.max_iter or 100)
 
-    df = pd.read_csv(f"{args.save_dir}/full.csv")
-    df[df["uidx"].isin([data.uidx for data in active_learner.datasets_train[0]])].to_csv(f"{args.save_dir}/train_end.csv", index=False)
-    df[df["uidx"].isin([data.uidx for data in active_learner.datasets_pool[0]])].to_csv(f"{args.save_dir}/pool_end.csv", index=False)
+    df = pd.read_csv(f"{args.save_dir}/full.csv").set_index("uidx", drop=False)
+    _write_dataset_subset_with_current_labels(
+        active_learner.datasets_train[0],
+        df,
+        args.targets_columns,
+        f"{args.save_dir}/train_end.csv",
+    )
+    _write_dataset_subset_with_current_labels(
+        active_learner.datasets_pool[0],
+        df,
+        args.targets_columns,
+        f"{args.save_dir}/pool_end.csv",
+    )
